@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Examen 3 – Láminas</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <style>
+    /* estilos mínimos si aún no tienes main.css */
+    body{margin:0;background:#0f172a;color:#e2e8f0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+    .card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:16px;margin-bottom:18px}
+    h1{margin:0 0 12px;font-size:22px}
+    label{font-size:12px;color:#9ca3af}
+    input,select{width:100%;background:#0b1220;border:1px solid #243043;border-radius:8px;color:#e5e7eb;padding:10px}
+    .row{display:grid;grid-template-columns: 2fr 2fr 2fr 1fr; gap:12px}
+    .btn{cursor:pointer;border:0;border-radius:8px;padding:8px 12px}
+    .btn-primary{background:#2563eb;color:#fff}
+    .btn-ghost{background:#1f2937;color:#e5e7eb}
+    .btn-warn{background:#ef4444;color:#fff}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #1f2937;font-size:14px}
+    th{color:#9ca3af;text-align:left}
+    .actions{display:flex;gap:8px;justify-content:flex-end}
+    .grid-2{display:grid;grid-template-columns: 1fr auto;gap:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Láminas</h1>
+      <p>CRUD contra <code>/api/v1/lamina</code></p>
+    </div>
+
+    <div class="card">
+      <form id="form-lamina">
+        <input type="hidden" id="lamina-id" />
+        <div class="row">
+          <div>
+            <label>Número</label>
+            <input type="number" id="numero" placeholder="p.ej. 1" required />
+          </div>
+          <div>
+            <label>Álbum</label>
+            <select id="albumId" required>
+              <option value="">— elige álbum —</option>
+            </select>
+          </div>
+          <div>
+            <label>Tipo de Lámina (opcional)</label>
+            <input type="number" id="tipoLaminaId" placeholder="id tipo" />
+          </div>
+          <div class="grid-2" style="align-items:end">
+            <button class="btn btn-primary" type="submit">Guardar</button>
+            <button class="btn btn-ghost" type="button" id="btn-clear">Limpiar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="grid-2" style="margin-bottom:10px">
+        <h2 style="margin:0;font-size:18px">Listado</h2>
+        <div class="actions">
+          <button class="btn btn-ghost" id="btn-reload">Recargar</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:70px">ID</th>
+            <th>Número</th>
+            <th>Álbum</th>
+            <th>Tipo</th>
+            <th style="width:160px;text-align:right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-laminas"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script src="/js/api.js"></script>
+<script src="/js/app-lamina.js"></script>
+</body>
+</html>

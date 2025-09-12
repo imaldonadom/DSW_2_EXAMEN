@@ -18,3 +18,7 @@ INSERT INTO album_tags (album_id, tag) VALUES (1, 'deportes'), (1, 'copa');
 -- descomenta esto y ajusta la cantidad:
 -- INSERT INTO laminas (numero, tipo_lamina_id, album_id) VALUES
 -- (1, 1, 1),(2, 1, 1),(3, 2, 1),(4, 1, 1),(5, 2, 1),(6, 1, 1),(7, 1, 1),(8, 2, 1),(9, 1, 1),(10, 1, 1);
+
+insert into categorias(nombre) values ('Fútbol');
+insert into albumes(nombre, categoria_id, activo, fecha_lanzamiento, fecha_sorteo, cantidad_laminas)
+values ('Álbum Copa 2025', 1, true, '2025-09-12', '2025-10-01', 10);
