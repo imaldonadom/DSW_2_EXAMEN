@@ -2,8 +2,11 @@ package com.ipss.et.service;
 
 import com.ipss.et.dto.AlbumCUDTO;
 import com.ipss.et.dto.AlbumDTO;
-import com.ipss.et.model.*;
-import com.ipss.et.repository.*;
+import com.ipss.et.model.Album;
+import com.ipss.et.model.Lamina;
+import com.ipss.et.repository.AlbumRepository;
+import com.ipss.et.repository.CategoriaRepository;
+import com.ipss.et.repository.LaminaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,17 +15,20 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
-@Service @RequiredArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class AlbumService {
 
     private final AlbumRepository albumes;
     private final CategoriaRepository categorias;
     private final LaminaRepository laminas;
 
+    @Transactional(readOnly = true)
     public List<AlbumDTO> listar() {
         return albumes.findAll().stream().map(AlbumDTO::of).toList();
     }
 
+    @Transactional(readOnly = true)
     public AlbumDTO obtener(Long id) {
         Album a = albumes.findById(id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Álbum no encontrado"));
@@ -35,16 +41,18 @@ public class AlbumService {
         a.setNombre(in.getNombre());
         a.setFechaLanzamiento(in.getFechaLanzamiento());
         a.setFechaSorteo(in.getFechaSorteo());
+
         if (in.getCategoria()!=null && in.getCategoria().get("id")!=null) {
             a.setCategoria(categorias.findById(in.getCategoria().get("id"))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Categoría inválida")));
         }
+
         a.setTags(in.getTags());
         a.setCantidadLaminas(in.getCantidadLaminas());
         a.setActivo(true);
         a = albumes.save(a);
 
-        // Crear las láminas 1..N automáticamente
+        // Crear automáticamente láminas 1..N
         int n = a.getCantidadLaminas()==null?0:a.getCantidadLaminas();
         for (int i=1;i<=n;i++) {
             Lamina l = Lamina.builder().numero(i).album(a).build();
@@ -61,10 +69,12 @@ public class AlbumService {
         if (in.getNombre()!=null) a.setNombre(in.getNombre());
         if (in.getFechaLanzamiento()!=null) a.setFechaLanzamiento(in.getFechaLanzamiento());
         if (in.getFechaSorteo()!=null) a.setFechaSorteo(in.getFechaSorteo());
+
         if (in.getCategoria()!=null && in.getCategoria().get("id")!=null) {
             a.setCategoria(categorias.findById(in.getCategoria().get("id"))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Categoría inválida")));
         }
+
         if (in.getTags()!=null) a.setTags(in.getTags());
 
         if (in.getCantidadLaminas()!=null && !in.getCantidadLaminas().equals(a.getCantidadLaminas())) {
@@ -76,8 +86,7 @@ public class AlbumService {
                 }
             } else if (nuevo < actual) {
                 for (int i=actual;i>nuevo;i--) {
-                    laminas.findByAlbumIdAndNumero(a.getId(), i)
-                           .ifPresent(laminas::delete);
+                    laminas.findByAlbumIdAndNumero(a.getId(), i).ifPresent(laminas::delete);
                 }
             }
             a.setCantidadLaminas(nuevo);

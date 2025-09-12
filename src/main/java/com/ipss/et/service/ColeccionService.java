@@ -23,6 +23,7 @@ public class ColeccionService {
     private final LaminaRepository laminas;
     private final EstadoRepository estados;
 
+    @Transactional(readOnly = true)
     public List<ColeccionPayloads.ColeccionistaAlbumes> listarPorColeccionista(Long coleccionistaId) {
         var list = colecciones.findByColeccionistaId(coleccionistaId);
 
@@ -113,10 +114,9 @@ public class ColeccionService {
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lámina inválida"));
                 var item = ColeccionItem.builder()
                         .coleccion(c).lamina(lam).cantidad(lamIn.getCantidad()).build();
-                c.getLaminas().add(item); // cascade ALL en Coleccion mantiene la persistencia
+                c.getLaminas().add(item);
             }
 
-            // Guardamos cambios en la colección tras añadir items
             colecciones.save(c);
         }
     }
