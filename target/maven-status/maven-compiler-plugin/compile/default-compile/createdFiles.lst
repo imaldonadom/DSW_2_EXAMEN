@@ -49,6 +49,8 @@ com\ipss\et\model\TipoLamina$TipoLaminaBuilder.class
 com\ipss\et\model\Coleccionista$ColeccionistaBuilder.class
 com\ipss\et\config\SecurityConfig.class
 com\ipss\et\repository\AlbumRepository.class
+com\ipss\et\config\ApiExceptionHandler.class
+com\ipss\et\config\OpenAPIConfig.class
 com\ipss\et\dto\LaminaCUDTO.class
 com\ipss\et\model\Album.class
 com\ipss\et\model\Album$AlbumBuilder.class

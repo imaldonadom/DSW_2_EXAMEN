@@ -25,12 +25,13 @@ public class AlbumService {
 
     @Transactional(readOnly = true)
     public List<AlbumDTO> listar() {
-        return albumes.findAll().stream().map(AlbumDTO::of).toList();
+        // Usamos el método con EntityGraph (join fetch)
+        return albumes.findAllGraph().stream().map(AlbumDTO::of).toList();
     }
 
     @Transactional(readOnly = true)
     public AlbumDTO obtener(Long id) {
-        Album a = albumes.findById(id).orElseThrow(() ->
+        Album a = albumes.findByIdGraph(id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Álbum no encontrado"));
         return AlbumDTO.of(a);
     }
@@ -58,7 +59,8 @@ public class AlbumService {
             Lamina l = Lamina.builder().numero(i).album(a).build();
             laminas.save(l);
         }
-        return AlbumDTO.of(a);
+        // devolvemos con dependencias cargadas
+        return obtener(a.getId());
     }
 
     @Transactional
@@ -92,7 +94,9 @@ public class AlbumService {
             a.setCantidadLaminas(nuevo);
         }
 
-        return AlbumDTO.of(albumes.save(a));
+        albumes.save(a);
+        // devolvemos con dependencias cargadas
+        return obtener(a.getId());
     }
 
     @Transactional public void desactivar(Long id) {
