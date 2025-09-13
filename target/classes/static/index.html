@@ -18,7 +18,7 @@
     input,select,textarea{width:100%;background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px}
     input[type="date"]{padding:8px 10px}
     .row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
-    .row > div.col-2{grid-column:span 2} .row > div.col-3{grid-column:span 3} .row > div.col-6{grid-column:span 6}
+    .row > div.col-3{grid-column:span 3} .row > div.col-6{grid-column:span 6}
     .btn{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600}
     .primary{background:var(--primary)} .ghost{background:transparent;border:1px solid var(--border)}
     .danger{background:var(--danger)} .warning{background:var(--warning)}
@@ -98,145 +98,7 @@
     </div>
   </div>
 
-  <script>
-    const API = 'http://localhost:8080/api/v1';
-
-    const $ = s => document.querySelector(s);
-    const $$ = s => document.querySelectorAll(s);
-    const val = id => $(id).value.trim();
-
-    async function http(url, options = {}) {
-      const res = await fetch(url, {
-        headers: { 'Content-Type':'application/json' },
-        ...options
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || res.statusText);
-      }
-      return res.status === 204 ? null : res.json();
-    }
-
-    async function listar() {
-      const tbody = $('#tbody');
-      tbody.innerHTML = `<tr><td colspan="8" class="empty">Cargando…</td></tr>`;
-      try {
-        const data = await http(`${API}/album/`);
-        if (!data.length) {
-          tbody.innerHTML = `<tr><td colspan="8" class="empty">Sin registros.</td></tr>`;
-          return;
-        }
-        tbody.innerHTML = '';
-        for (const a of data) {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${a.id}</td>
-            <td>${a.nombre}</td>
-            <td>${a.categoria ? a.categoria.nombre : '-'}</td>
-            <td>${(a.tags||[]).map(t=>`<span class="pill">${t}</span>`).join('')}</td>
-            <td>${a.activo ? '✅' : '❌'}</td>
-            <td>
-              <div class="muted" style="font-size:12px">
-                L: ${a["fecha de lanzamiento"] || a.fecha_lanzamiento || a.fechaLanzamiento || '-'}
-                <br>S: ${a["fecha sorteo"] || a.fecha_sorteo || a.fechaSorteo || '-'}
-              </div>
-            </td>
-            <td>${a["cantidad de láminas"] ?? a.cantidad_laminas ?? a.cantidadLaminas ?? 0}</td>
-            <td class="actions">
-              <button class="btn warning" data-edit="${a.id}">Editar</button>
-              <button class="btn danger" data-del="${a.id}">Eliminar</button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        }
-      } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="8" class="empty">Error al cargar: ${e.message}</td></tr>`;
-      }
-    }
-
-    function limpiarForm() {
-      $('#id').value = '';
-      $('#nombre').value = '';
-      $('#categoriaId').value = '';
-      $('#cantidadLaminas').value = 0;
-      $('#activo').value = 'true';
-      $('#fechaLanzamiento').value = '';
-      $('#fechaSorteo').value = '';
-      $('#tags').value = '';
-      $('#saveBtn').textContent = 'Guardar';
-    }
-
-    async function guardar(e) {
-      e.preventDefault();
-
-      const id = $('#id').value || null;
-      const payload = {
-        nombre: val('#nombre'),
-        categoriaId: $('#categoriaId').value ? Number($('#categoriaId').value) : null,
-        tags: val('#tags') ? val('#tags').split(',').map(s => s.trim()).filter(Boolean) : [],
-        activo: $('#activo').value === 'true',
-        // usamos alias que tu DTO entiende:
-        fecha_lanzamiento: $('#fechaLanzamiento').value || null,
-        fecha_sorteo: $('#fechaSorteo').value || null,
-        cantidad_laminas: $('#cantidadLaminas').value ? Number($('#cantidadLaminas').value) : 0
-      };
-
-      try {
-        if (id) {
-          await http(`${API}/album/${id}`, { method:'PUT', body: JSON.stringify(payload) });
-        } else {
-          await http(`${API}/album/`, { method:'POST', body: JSON.stringify(payload) });
-        }
-        limpiarForm();
-        await listar();
-      } catch (e) {
-        alert('Error guardando: ' + e.message);
-      }
-    }
-
-    async function eliminar(id) {
-      if (!confirm('¿Eliminar álbum ' + id + '?')) return;
-      try {
-        await http(`${API}/album/${id}`, { method:'DELETE' });
-        await listar();
-      } catch (e) {
-        alert('Error eliminando: ' + e.message);
-      }
-    }
-
-    async function cargarParaEditar(id) {
-      try {
-        const data = await http(`${API}/album/${id}`);
-        $('#id').value = data.id;
-        $('#nombre').value = data.nombre ?? '';
-        $('#categoriaId').value = data.categoria?.id ?? '';
-        $('#cantidadLaminas').value = data['cantidad de láminas'] ?? data.cantidad_laminas ?? data.cantidadLaminas ?? 0;
-        $('#activo').value = String(Boolean(data.activo));
-        const fL = data["fecha de lanzamiento"] || data.fecha_lanzamiento || data.fechaLanzamiento || '';
-        const fS = data["fecha sorteo"] || data.fecha_sorteo || data.fechaSorteo || '';
-        $('#fechaLanzamiento').value = fL;
-        $('#fechaSorteo').value = fS;
-        $('#tags').value = (data.tags||[]).join(', ');
-        $('#saveBtn').textContent = 'Actualizar';
-        window.scrollTo({ top:0, behavior:'smooth' });
-      } catch (e) {
-        alert('No se pudo cargar el álbum: ' + e.message);
-      }
-    }
-
-    // Listeners
-    $('#albumForm').addEventListener('submit', guardar);
-    $('#resetBtn').addEventListener('click', limpiarForm);
-    $('#reloadBtn').addEventListener('click', listar);
-    document.addEventListener('click', (e)=>{
-      const del = e.target.closest('[data-del]');
-      const edit = e.target.closest('[data-edit]');
-      if (del) eliminar(del.dataset.del);
-      if (edit) cargarParaEditar(edit.dataset.edit);
-    });
-
-    // Go!
-    listar();
-  </script>
+  <!-- JS externo (sin script inline) -->
+  <script src="/js/app-album.js"></script>
 </body>
 </html>

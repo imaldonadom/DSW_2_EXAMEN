@@ -22,6 +22,7 @@ com\ipss\et\controller\PingController.class
 com\ipss\et\model\Lamina$LaminaBuilder.class
 com\ipss\et\Examen3Application.class
 com\ipss\et\dto\ColeccionPayloads$ColeccionistaAlbumes$ColeccionistaAlbumesBuilder.class
+com\ipss\et\config\LocalDateStringConverter.class
 com\ipss\et\dto\ColeccionPayloads$UpsertColeccion$LaminaIn$LaminaInBuilder.class
 com\ipss\et\repository\ColeccionRepository.class
 com\ipss\et\dto\ColeccionPayloads$ColeccionistaAlbumes$AlbumDeColeccion$AlbumDeColeccionBuilder.class
