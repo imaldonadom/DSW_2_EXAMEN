@@ -10,15 +10,14 @@ import java.util.List;
 
 @Configuration
 public class OpenAPIConfig {
+
     @Bean
-    public OpenAPI baseOpenAPI() {
+    public OpenAPI api() {
         return new OpenAPI()
-            .info(new Info()
-                .title("Examen 3 - Álbum API")
-                .version("v1")
-                .description("API para álbumes, láminas y colecciones"))
-            .servers(List.of(
-                new Server().url("http://localhost:8080").description("Local")
-            ));
+                .info(new Info()
+                        .title("Examen 3 - Álbum API")
+                        .version("v1")
+                        .description("API para álbumes, láminas y colecciones"))
+                .servers(List.of(new Server().url("http://localhost:8080")));
     }
 }
