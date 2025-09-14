@@ -1,187 +1,138 @@
-// js/app-lamina.js
+(() => {
+  const $ = s => document.querySelector(s);
 
-// Fallback de tipos si el endpoint no existe
-const TIPOS_FALLBACK = [
-  { id: 1, nombre: 'Normal' },
-  { id: 2, nombre: 'Brillante' },
-  { id: 3, nombre: 'Dorada' }
-];
+  const api = async (url, opt={}) => {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opt
+    });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText} -> ${await res.text().catch(()=>'-')}`);
+    return res.json();
+  };
 
-let tipos = [];
-let albums = [];
+  const els = {
+    cant:   $('#fCant'),
+    album:  $('#fAlbum'),
+    tipo:   $('#fTipo'),
+    save:   $('#btnSave'),
+    clear:  $('#btnClear'),
+    reload: $('#btnReload'),
+    tpl:    $('#btnTpl'),
+    csv:    $('#fCsv'),
+    tbody:  $('#tbody')
+  };
 
-async function loadTipos() {
-  try {
-    const res = await api.get('/api/v1/tipo-lamina');
-    tipos = Array.isArray(res) && res.length ? res : TIPOS_FALLBACK;
-  } catch {
-    tipos = TIPOS_FALLBACK;
-  }
-  const sel = document.getElementById('lamTipo');
-  sel.innerHTML = tipos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-  sel.value = '1'; // por defecto Normal
-}
+  const tipoNombre = (id) => {
+    if (!id || id === '' || id === '1') return 'Normal';
+    if (String(id) === '2') return 'Brillante';
+    if (String(id) === '3') return 'Dorada';
+    return '—';
+  };
 
-async function loadAlbums() {
-  try {
-    albums = await api.get('/api/v1/album');
-  } catch {
-    albums = [];
-  }
-  const sel = document.getElementById('lamAlbum');
-  sel.innerHTML = `<option value="">— elige —</option>` +
-    albums.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
-}
+  const loadAlbumes = async () => {
+    els.album.innerHTML = '';
+    const data = await api('/api/v1/album');
+    els.album.append(new Option('— elige —', ''));
+    data.forEach(a => els.album.append(new Option(`${a.nombre} (${a.id})`, a.id)));
+  };
 
-async function loadLaminas() {
-  const tbody = document.getElementById('lamRows');
-  tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">Cargando…</td></tr>`;
-  try {
-    const data = await api.get('/api/v1/lamina');
-    if (!data.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">Sin registros.</td></tr>`;
-      return;
-    }
-    const rows = data.map(l => {
-      const albNom = l.album?.nombre ?? (albums.find(a => a.id === l.albumId)?.nombre) ?? `#${l.album?.id ?? l.albumId}`;
-      const tipoNom = l.tipo?.nombre ?? (tipos.find(t => t.id === l.tipoId)?.nombre) ?? 'Normal';
-      return `
+  const load = async () => {
+    // Si tienes GET /api/v1/lamina, úsalo. Si no, muestra “Sin registros.”
+    try {
+      const list = await api('/api/v1/lamina'); // ajusta si tu endpoint es distinto
+      if (!list.length) {
+        els.tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4">Sin registros.</td></tr>`;
+        return;
+      }
+      els.tbody.innerHTML = list.map(l => `
         <tr>
           <td>${l.id}</td>
           <td>${l.numero}</td>
-          <td>${albNom}</td>
-          <td>${tipoNom}</td>
-          <td class="text-end">
-            <button class="btn btn-sm btn-danger" onclick="delLamina(${l.id})">Eliminar</button>
-          </td>
+          <td>${l.album?.nombre ?? '-'}</td>
+          <td>${tipoNombre(l.tipo?.id)}</td>
+          <td><button class="btn btn-sm btn-outline-danger" data-evt="del" data-id="${l.id}">Eliminar</button></td>
         </tr>
-      `;
-    }).join('');
-    tbody.innerHTML = rows;
-  } catch (e) {
-    console.error(e);
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Error cargando datos</td></tr>`;
-  }
-}
-
-function clearForm() {
-  document.getElementById('lamCantidad').value = 60;
-  document.getElementById('lamAlbum').value = '';
-  document.getElementById('lamTipo').value = '1';
-  document.getElementById('lamCsv').value = '';
-}
-
-// Crear N láminas consecutivas 1..cantidad (si existen, el backend debería ignorar/validar)
-async function saveCantidad() {
-  const cantidad = +document.getElementById('lamCantidad').value || 0;
-  const albumId = document.getElementById('lamAlbum').value;
-  const tipoId = document.getElementById('lamTipo').value || 1;
-
-  if (!albumId) {
-    alert('Elige un álbum');
-    return;
-  }
-  if (cantidad < 1) {
-    alert('Cantidad inválida');
-    return;
-  }
-
-  // Para evitar muchos errores por duplicado, pedimos las existentes y saltamos repetidos
-  const existentes = await api.get('/api/v1/lamina');
-  const ya = new Set(
-    existentes.filter(x => (x.album?.id ?? x.albumId) == albumId)
-              .map(x => x.numero)
-  );
-
-  const toCreate = [];
-  for (let n = 1; n <= cantidad; n++) {
-    if (!ya.has(n)) {
-      toCreate.push({ numero: n, album: {id: +albumId}, tipo: {id: +tipoId} });
+      `).join('');
+    } catch {
+      els.tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4">Sin registros.</td></tr>`;
     }
-  }
+  };
 
-  if (!toCreate.length) {
-    alert('No hay láminas nuevas para crear (parecen existir todas).');
-    return;
-  }
+  els.save.addEventListener('click', async () => {
+    const n = Number(els.cant.value || 0);
+    const albumId = els.album.value ? Number(els.album.value) : null;
+    const tipoId = els.tipo.value ? Number(els.tipo.value) : 1;
+    if (!albumId || n <= 0) return alert('Selecciona álbum y cantidad > 0');
 
-  try {
-    // sin endpoint bulk, hacemos uno a uno
-    for (const item of toCreate) {
-      await api.post('/api/v1/lamina', item);
+    if (!confirm(`Crear ${n} láminas para álbum #${albumId}?`)) return;
+
+    // Si tienes un endpoint bulk, úsalo. Aquí “simulamos” N POST consecutivos.
+    try {
+      for (let i = 1; i <= n; i++) {
+        const body = JSON.stringify({ numero: i, albumId, tipoId: tipoId === 1 ? null : tipoId });
+        await api('/api/v1/lamina', { method: 'POST', body });
+      }
+      await load();
+    } catch (e) {
+      alert('Error guardando: ' + e.message);
     }
-    alert(`Creadas ${toCreate.length} láminas nuevas`);
-    loadLaminas();
-  } catch (e) {
-    console.error(e);
-    alert('Error creando láminas.');
-  }
-}
+  });
 
-async function delLamina(id) {
-  if (!confirm('¿Eliminar lámina?')) return;
-  try {
-    await api.del(`/api/v1/lamina/${id}`);
-    loadLaminas();
-  } catch {
-    alert('No se pudo eliminar.');
-  }
-}
+  els.clear.addEventListener('click', () => {
+    els.cant.value = 60;
+    els.album.value = '';
+    els.tipo.value = '';
+  });
 
-// Plantilla CSV
-document.getElementById('btnTpl').addEventListener('click', () => {
-  const blob = new Blob(
-    [`numero,albumId,tipoId\n1,1,1\n2,1,2\n3,1,3\n`],
-    { type: 'text/csv;charset=utf-8' }
-  );
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'laminas_template.csv';
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-});
+  els.reload.addEventListener('click', load);
 
-// Importar CSV (columnas: numero,albumId,tipoId)
-document.getElementById('lamCsv').addEventListener('change', async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+  els.tpl.addEventListener('click', () => {
+    // columnas por campo
+    const csv = 'numero,albumId,tipoId\n1,1,\n2,1,2\n3,1,3\n';
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'plantilla_laminas.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
 
-  const text = await file.text();
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const header = lines.shift();
-  if (!/^numero\s*,\s*albumId\s*,\s*tipoId$/i.test(header)) {
-    alert('Cabecera CSV inválida. Debe ser: numero,albumId,tipoId');
-    return;
-  }
-
-  const registros = lines.map(l => {
-    const [numero, albumId, tipoId] = l.split(',').map(x => x.trim());
-    return { numero: +numero, album: {id:+albumId}, tipo: {id:+tipoId||1} };
-  }).filter(r => r.numero > 0 && r.album.id > 0);
-
-  if (!registros.length) {
-    alert('El CSV está vacío.');
-    return;
-  }
-
-  try {
-    for (const r of registros) {
-      await api.post('/api/v1/lamina', r);
+  els.csv.addEventListener('change', async (ev) => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const rows = text.trim().split(/\r?\n/);
+    const header = rows.shift().split(',').map(s=>s.trim());
+    const idx = {
+      numero: header.indexOf('numero'),
+      albumId: header.indexOf('albumId'),
+      tipoId: header.indexOf('tipoId')
+    };
+    if (idx.numero < 0 || idx.albumId < 0 || idx.tipoId < 0) {
+      return alert('La plantilla debe tener columnas: numero,albumId,tipoId');
     }
-    alert(`Importadas ${registros.length} láminas`);
-    loadLaminas();
-  } catch (e) {
-    console.error(e);
-    alert('Error al importar CSV.');
-  }
-});
 
-document.getElementById('btnLamSave').addEventListener('click', saveCantidad);
-document.getElementById('btnLamClear').addEventListener('click', clearForm);
-document.getElementById('btnLamReload').addEventListener('click', loadLaminas);
+    try {
+      for (const r of rows) {
+        const c = r.split(',').map(s=>s.trim());
+        const body = JSON.stringify({
+          numero: Number(c[idx.numero]),
+          albumId: Number(c[idx.albumId]),
+          tipoId: c[idx.tipoId] ? Number(c[idx.tipoId]) : null
+        });
+        await api('/api/v1/lamina', { method: 'POST', body });
+      }
+      await load();
+    } catch (e) {
+      alert('Error importando CSV: ' + e.message);
+    } finally {
+      els.csv.value = '';
+    }
+  });
 
-(async function init(){
-  await loadTipos();
-  await loadAlbums();
-  await loadLaminas();
+  // init
+  (async () => {
+    await loadAlbumes();
+    await load();
+  })();
 })();

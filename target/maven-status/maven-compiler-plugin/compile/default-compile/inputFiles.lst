@@ -4,12 +4,15 @@ C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\config\LocalDateStringCon
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\config\OpenAPIConfig.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\config\SecurityConfig.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\AlbumController.java
+C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\CategoriaController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\ColeccionController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\LaminaController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\PingController.java
+C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\TipoLaminaController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\AlbumCUDTO.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\AlbumDTO.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\ColeccionPayloads.java
+C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\ComboDTO.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\LaminaCUDTO.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\LaminaDTO.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\Examen3Application.java

@@ -2,6 +2,7 @@ package com.ipss.et.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -9,16 +10,15 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-           .authorizeHttpRequests(auth -> auth
-               .requestMatchers(
-                   "/", "/index.html", "/laminas.html",
-                   "/js/**", "/css/**", "/img/**",
-                   "/swagger-ui/**", "/v3/api-docs/**",
-                   "/api/v1/**"
-               ).permitAll()
-               .anyRequest().permitAll()
-           );
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/index.html", "/laminas.html", "/js/**", "/css/**", "/webjars/**",
+                                 "/swagger-ui/**", "/v3/api-docs/**",
+                                 "/api/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .httpBasic(Customizer.withDefaults());
         return http.build();
     }
 }

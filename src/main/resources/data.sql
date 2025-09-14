@@ -4,12 +4,12 @@ PRAGMA foreign_keys = ON;
 -- =========================
 -- CATEGORÍAS
 -- =========================
-INSERT OR IGNORE INTO categorias (id, nombre) VALUES
- (1, 'Fútbol'),
- (2, 'Música'),
- (3, 'Cómics'),
- (4, 'Manga'),
- (5, 'Película');
+INSERT OR IGNORE INTO categorias(id, nombre) VALUES
+ (1,'Fútbol'),
+ (2,'Música'),
+ (3,'Cómics'),
+ (4,'Películas'),
+ (5,'Manga');
 
 -- =========================
 -- TIPOS DE LÁMINA

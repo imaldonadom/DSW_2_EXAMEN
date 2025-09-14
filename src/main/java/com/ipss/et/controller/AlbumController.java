@@ -1,92 +1,87 @@
 package com.ipss.et.controller;
 
-import com.ipss.et.dto.AlbumCUDTO;
-import com.ipss.et.dto.AlbumDTO;
 import com.ipss.et.model.Album;
 import com.ipss.et.model.Categoria;
 import com.ipss.et.repository.AlbumRepository;
 import com.ipss.et.repository.CategoriaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/v1/album")
 @RequiredArgsConstructor
 public class AlbumController {
 
-    private final AlbumRepository albumRepo;
-    private final CategoriaRepository categoriaRepo;
+    private final AlbumRepository albumes;
+    private final CategoriaRepository categorias;
 
-    @GetMapping("/")
-    public List<AlbumDTO> list() {
-        return albumRepo.findAll()
-                .stream().map(this::toDTO).toList();
+    // -------- GET: lista de álbumes --------
+    @GetMapping
+    public List<Map<String,Object>> list() {
+        return albumes.findAll().stream()
+                .map(this::toDto)
+                .toList();
     }
 
-    @GetMapping("/{id}")
-    public AlbumDTO get(@PathVariable Long id) {
-        Album a = albumRepo.findById(id).orElseThrow();
-        return toDTO(a);
-    }
-
-    @PostMapping("/")
-    public AlbumDTO create(@RequestBody AlbumCUDTO dto) {
+    // -------- POST: crear álbum --------
+    @PostMapping
+    public Map<String,Object> create(@RequestBody Map<String,Object> in) {
         Album a = new Album();
-        apply(a, dto);
-        a = albumRepo.save(a);
-        return toDTO(a);
-    }
+        a.setNombre((String) in.getOrDefault("nombre",""));
 
-    @PutMapping("/{id}")
-    public AlbumDTO update(@PathVariable Long id, @RequestBody AlbumCUDTO dto) {
-        Album a = albumRepo.findById(id).orElseThrow();
-        apply(a, dto);
-        a = albumRepo.save(a);
-        return toDTO(a);
-    }
+        // fechaLanzamiento y fechaSorteo en ISO (yyyy-MM-dd). Si vienen vacías, quedan en null.
+        a.setFechaLanzamiento(parseDate((String) in.get("fechaLanzamiento")));
+        a.setFechaSorteo(parseDate((String) in.get("fechaSorteo")));
 
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        albumRepo.deleteById(id);
-    }
+        // tags: lista de strings (o vacío)
+        @SuppressWarnings("unchecked")
+        List<String> tags = (List<String>) in.get("tags");
+        a.setTags(tags != null ? tags : new ArrayList<>());
 
-    // ---------- helpers ----------
-    private void apply(Album a, AlbumCUDTO dto) {
-        a.setNombre(dto.getNombre());
+        // activo (default true)
+        Object act = in.get("activo");
+        a.setActivo(act instanceof Boolean b ? b : Boolean.TRUE);
 
-        // fechas (LocalDate) ya convertidas por el conversor
-        a.setFechaLanzamiento(dto.getFechaLanzamiento());
-        a.setFechaSorteo(dto.getFechaSorteo());
+        // cantidadLaminas (default 0)
+        Object cant = in.get("cantidadLaminas");
+        a.setCantidadLaminas(cant instanceof Number n ? n.intValue() : 0);
 
-        a.setTags(dto.getTags() != null ? dto.getTags() : List.of());
-        a.setActivo(dto.getActivo() != null ? dto.getActivo() : Boolean.TRUE);
-        a.setCantidadLaminas(dto.getCantidadLaminas() != null ? dto.getCantidadLaminas() : 0);
-
-        if (dto.getCategoriaId() == null) {
-            throw new IllegalArgumentException("Categoría inválida");
-        }
-        Categoria cat = categoriaRepo.findById(dto.getCategoriaId())
-                .orElseThrow(() -> new IllegalArgumentException("Categoría inválida"));
+        // categoría (obligatoria)
+        Object catId = in.get("categoriaId");
+        if (catId == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Categoría requerida");
+        Long id = (catId instanceof Number n) ? n.longValue() : Long.valueOf(catId.toString());
+        Categoria cat = categorias.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Categoría inválida"));
         a.setCategoria(cat);
+
+        return toDto(albumes.save(a));
     }
 
-    private AlbumDTO toDTO(Album a) {
-        AlbumDTO d = new AlbumDTO();
-        d.setId(a.getId());
-        d.setNombre(a.getNombre());
-        if (a.getCategoria() != null) {
-            AlbumDTO.Cat c = new AlbumDTO.Cat();
-            c.setId(a.getCategoria().getId());
-            c.setNombre(a.getCategoria().getNombre());
-            d.setCategoria(c);
+    // -------- helpers --------
+    private LocalDate parseDate(String s) {
+        if (s == null || s.isBlank()) return null;
+        return LocalDate.parse(s); // yyyy-MM-dd
+    }
+
+    private Map<String,Object> toDto(Album a) {
+        Map<String,Object> cat = null;
+        if (a.getCategoria()!=null) {
+            cat = Map.of("id", a.getCategoria().getId(), "nombre", a.getCategoria().getNombre());
         }
-        d.setTags(a.getTags());
-        d.setActivo(a.getActivo());
-        d.setFechaLanzamiento(a.getFechaLanzamiento());
-        d.setFechaSorteo(a.getFechaSorteo());
-        d.setCantidadLaminas(a.getCantidadLaminas());
-        return d;
+        return Map.<String,Object>of(
+                "id", a.getId(),
+                "nombre", a.getNombre(),
+                "categoria", cat,
+                "activo", Boolean.TRUE.equals(a.getActivo()),
+                "fechaLanzamiento", a.getFechaLanzamiento(),
+                "fechaSorteo", a.getFechaSorteo(),
+                "cantidadLaminas", a.getCantidadLaminas()==null?0:a.getCantidadLaminas(),
+                "tags", a.getTags()==null? List.of(): a.getTags()
+        );
     }
 }

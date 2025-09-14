@@ -1,6 +1,7 @@
 com\ipss\et\model\Categoria$CategoriaBuilder.class
 com\ipss\et\service\LaminaService.class
 com\ipss\et\controller\AlbumController.class
+com\ipss\et\dto\AlbumDTO$AlbumDTOBuilder.class
 com\ipss\et\repository\LaminaRepository.class
 com\ipss\et\model\Coleccion$ColeccionBuilder.class
 com\ipss\et\service\ColeccionService.class
@@ -8,9 +9,11 @@ com\ipss\et\dto\AlbumDTO.class
 com\ipss\et\repository\ColeccionItemRepository.class
 com\ipss\et\model\Coleccion.class
 com\ipss\et\dto\ColeccionPayloads$UpsertColeccion$AlbumIn.class
+com\ipss\et\dto\LaminaDTO$LaminaDTOBuilder.class
+com\ipss\et\dto\LaminaCUDTO$LaminaCUDTOBuilder.class
 com\ipss\et\dto\AlbumCUDTO.class
-com\ipss\et\dto\LaminaDTO$Alb.class
 com\ipss\et\dto\ColeccionPayloads$UpsertColeccion$LaminaIn.class
+com\ipss\et\controller\CategoriaController.class
 com\ipss\et\service\AlbumService.class
 com\ipss\et\model\ColeccionItem.class
 com\ipss\et\dto\ColeccionPayloads$UpsertColeccion.class
@@ -32,14 +35,15 @@ com\ipss\et\model\Categoria.class
 com\ipss\et\dto\ColeccionPayloads$ColeccionistaAlbumes$AlbumDeColeccion.class
 com\ipss\et\config\LocalDateAttributeConverter.class
 com\ipss\et\dto\ColeccionPayloads$ColeccionistaAlbumes$LaminaCantidad.class
+com\ipss\et\dto\ComboDTO.class
 com\ipss\et\model\Estado$EstadoBuilder.class
-com\ipss\et\dto\LaminaDTO$Tipo.class
 com\ipss\et\repository\CategoriaRepository.class
 com\ipss\et\dto\ColeccionPayloads$ColeccionistaAlbumes$LaminaCantidad$LaminaCantidadBuilder.class
 com\ipss\et\model\TipoLamina.class
 com\ipss\et\dto\LaminaDTO.class
 com\ipss\et\model\ColeccionItem$ColeccionItemBuilder.class
 com\ipss\et\controller\ColeccionController.class
+com\ipss\et\controller\TipoLaminaController.class
 com\ipss\et\dto\ColeccionPayloads$UpsertColeccion$AlbumIn$AlbumInBuilder.class
 com\ipss\et\dto\ColeccionPayloads$ColeccionistaAlbumes.class
 com\ipss\et\repository\EstadoRepository.class
