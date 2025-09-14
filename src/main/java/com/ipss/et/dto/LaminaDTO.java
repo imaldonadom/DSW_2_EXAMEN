@@ -1,38 +1,25 @@
 package com.ipss.et.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ipss.et.model.Lamina;
-import lombok.Builder;
-import lombok.Value;
+import lombok.*;
 
-import java.util.Map;
-
-@Value
-@Builder
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class LaminaDTO {
-    Long id;
-    Integer numero;
-
-    @JsonProperty("tipo de lamina")
-    Map<String, Object> tipo;      // {id, nombre}
-
-    Map<String, Long> album;       // {"id": <albumId>}
+    private Long id;
+    private Integer numero;
+    private Long albumId;
+    private String albumNombre;
+    private Long tipoId;
+    private String tipoNombre;
 
     public static LaminaDTO of(Lamina l) {
-        Map<String,Object> tipoMap = (l.getTipoLamina() == null)
-                ? null
-                : Map.<String,Object>of(
-                    "id", l.getTipoLamina().getId(),
-                    "nombre", l.getTipoLamina().getNombre()
-                  );
-
         return LaminaDTO.builder()
                 .id(l.getId())
                 .numero(l.getNumero())
-                .tipo(tipoMap)
-                .album(Map.of("id", l.getAlbum().getId()))
+                .albumId(l.getAlbum().getId())
+                .albumNombre(l.getAlbum().getNombre())
+                .tipoId(l.getTipo() != null ? l.getTipo().getId() : null)
+                .tipoNombre(l.getTipo() != null ? l.getTipo().getNombre() : "-")
                 .build();
     }
 }

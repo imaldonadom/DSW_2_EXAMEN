@@ -4,38 +4,39 @@ import com.ipss.et.dto.LaminaCUDTO;
 import com.ipss.et.dto.LaminaDTO;
 import com.ipss.et.service.LaminaService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/lamina")
-@CrossOrigin
 @RequiredArgsConstructor
 public class LaminaController {
 
     private final LaminaService service;
 
     @GetMapping("/")
-    public List<LaminaDTO> listar() { return service.listar(); }
-
-    @GetMapping("/{id}")
-    public LaminaDTO obtener(@PathVariable Long id) { return service.obtener(id); }
-
-    @PostMapping("/")
-    public ResponseEntity<LaminaDTO> crear(@RequestBody LaminaCUDTO body) {
-        return ResponseEntity.ok(service.crear(body));
+    public List<LaminaDTO> listar(@RequestParam(value = "albumId", required = false) Long albumId) {
+        return service.listar(albumId);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<LaminaDTO> actualizar(@PathVariable Long id, @RequestBody LaminaCUDTO body) {
-        return ResponseEntity.ok(service.actualizar(id, body));
+    @PostMapping("/")
+    @ResponseStatus(HttpStatus.CREATED)
+    public LaminaDTO crear(@RequestBody LaminaCUDTO in) {
+        return service.crear(in);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminar(@PathVariable Long id) {
         service.eliminar(id);
-        return ResponseEntity.noContent().build();
+    }
+
+    // Carga masiva: recibe [{numero,albumId,tipoId}, ...]
+    @PostMapping("/bulk")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<LaminaDTO> crearBulk(@RequestBody List<LaminaCUDTO> items) {
+        return service.crearMasivo(items);
     }
 }

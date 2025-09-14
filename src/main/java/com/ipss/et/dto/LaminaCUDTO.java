@@ -1,14 +1,11 @@
 package com.ipss.et.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class LaminaCUDTO {
+    private Long id;          // para update si alguna vez lo usas
     private Integer numero;
-
-    @JsonProperty("tipo de lamina")
-    private java.util.Map<String, Long> tipo; // {"id": 1}
-
-    private java.util.Map<String, Long> album; // {"id": 123}
+    private Long albumId;
+    private Long tipoId;      // opcional
 }

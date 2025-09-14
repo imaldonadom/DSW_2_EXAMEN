@@ -1,213 +1,187 @@
 // js/app-lamina.js
-(() => {
-  'use strict';
 
-  // -------- Helpers de DOM ----------
-  const $ = (id) => document.getElementById(id);
-  const getVal = (id) => {
-    const el = $(id);
-    return el ? el.value.trim() : '';
-  };
-  const setVal = (id, v) => {
-    const el = $(id);
-    if (el) el.value = v ?? '';
-  };
+// Fallback de tipos si el endpoint no existe
+const TIPOS_FALLBACK = [
+  { id: 1, nombre: 'Normal' },
+  { id: 2, nombre: 'Brillante' },
+  { id: 3, nombre: 'Dorada' }
+];
 
-  // -------- HTTP (usa api.js si existe; si no, fallback con fetch) ----------
-  const http = window.api || {
-    async get(path) {
-      const r = await fetch(path);
-      if (!r.ok) throw new Error(`GET ${path} → ${r.status}`);
-      return r.json();
-    },
-    async post(path, body) {
-      const r = await fetch(path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!r.ok) throw new Error(`POST ${path} → ${r.status}`);
-      return r.json();
-    },
-    async put(path, body) {
-      const r = await fetch(path, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!r.ok) throw new Error(`PUT ${path} → ${r.status}`);
-      // algunos endpoints devuelven 200 con body, otros 204; maneja ambos
-      return r.status !== 204 ? r.json() : null;
-    },
-    async del(path) {
-      const r = await fetch(path, { method: 'DELETE' });
-      if (!r.ok) throw new Error(`DELETE ${path} → ${r.status}`);
-      return null;
-    },
-  };
+let tipos = [];
+let albums = [];
 
-  // -------- Estado --------
-  let editId = null;                 // id de lámina en edición
-  let albumsById = {};               // mapa id -> nombre de álbum
-  let laminasCache = [];             // cache del listado
+async function loadTipos() {
+  try {
+    const res = await api.get('/api/v1/tipo-lamina');
+    tipos = Array.isArray(res) && res.length ? res : TIPOS_FALLBACK;
+  } catch {
+    tipos = TIPOS_FALLBACK;
+  }
+  const sel = document.getElementById('lamTipo');
+  sel.innerHTML = tipos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+  sel.value = '1'; // por defecto Normal
+}
 
-  // -------- Carga de Álbumes (combo) --------
-  async function loadAlbums() {
-    const sel = $('lam_album');
-    if (!sel) return;
+async function loadAlbums() {
+  try {
+    albums = await api.get('/api/v1/album');
+  } catch {
+    albums = [];
+  }
+  const sel = document.getElementById('lamAlbum');
+  sel.innerHTML = `<option value="">— elige —</option>` +
+    albums.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
+}
 
-    sel.innerHTML = '<option value="">— elige álbum —</option>';
+async function loadLaminas() {
+  const tbody = document.getElementById('lamRows');
+  tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">Cargando…</td></tr>`;
+  try {
+    const data = await api.get('/api/v1/lamina');
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">Sin registros.</td></tr>`;
+      return;
+    }
+    const rows = data.map(l => {
+      const albNom = l.album?.nombre ?? (albums.find(a => a.id === l.albumId)?.nombre) ?? `#${l.album?.id ?? l.albumId}`;
+      const tipoNom = l.tipo?.nombre ?? (tipos.find(t => t.id === l.tipoId)?.nombre) ?? 'Normal';
+      return `
+        <tr>
+          <td>${l.id}</td>
+          <td>${l.numero}</td>
+          <td>${albNom}</td>
+          <td>${tipoNom}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-danger" onclick="delLamina(${l.id})">Eliminar</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    tbody.innerHTML = rows;
+  } catch (e) {
+    console.error(e);
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Error cargando datos</td></tr>`;
+  }
+}
 
-    const albums = await http.get('/api/v1/album/');
-    albumsById = {};
-    (albums || []).forEach(a => {
-      albumsById[a.id] = a.nombre;
-      const opt = document.createElement('option');
-      opt.value = a.id;
-      opt.textContent = a.nombre;
-      sel.appendChild(opt);
-    });
+function clearForm() {
+  document.getElementById('lamCantidad').value = 60;
+  document.getElementById('lamAlbum').value = '';
+  document.getElementById('lamTipo').value = '1';
+  document.getElementById('lamCsv').value = '';
+}
+
+// Crear N láminas consecutivas 1..cantidad (si existen, el backend debería ignorar/validar)
+async function saveCantidad() {
+  const cantidad = +document.getElementById('lamCantidad').value || 0;
+  const albumId = document.getElementById('lamAlbum').value;
+  const tipoId = document.getElementById('lamTipo').value || 1;
+
+  if (!albumId) {
+    alert('Elige un álbum');
+    return;
+  }
+  if (cantidad < 1) {
+    alert('Cantidad inválida');
+    return;
   }
 
-  // -------- Listado de Láminas --------
-  async function loadLaminas() {
-    const tbody = $('lam_tbody');
-    if (!tbody) return;
+  // Para evitar muchos errores por duplicado, pedimos las existentes y saltamos repetidos
+  const existentes = await api.get('/api/v1/lamina');
+  const ya = new Set(
+    existentes.filter(x => (x.album?.id ?? x.albumId) == albumId)
+              .map(x => x.numero)
+  );
 
-    laminasCache = await http.get('/api/v1/lamina/') || [];
-    tbody.innerHTML = laminasCache.map(rowHtml).join('');
-  }
-
-  function rowHtml(r) {
-    const albName = r?.album?.id != null
-      ? (albumsById[r.album.id] ?? `#${r.album.id}`)
-      : '-';
-
-    const tipo = (r?.tipoLamina?.nombre)
-      ?? (r?.tipoLamina?.id)
-      ?? (r?.tipoLaminaId)
-      ?? '-';
-
-    return `
-      <tr>
-        <td>${r.id}</td>
-        <td>${r.numero}</td>
-        <td>${albName}</td>
-        <td>${tipo}</td>
-        <td class="space-x-1">
-          <button class="lam-edit btn btn-xs btn-warning" data-id="${r.id}">Editar</button>
-          <button class="lam-del btn btn-xs btn-danger" data-id="${r.id}">Eliminar</button>
-        </td>
-      </tr>
-    `.trim();
-  }
-
-  // -------- Formulario --------
-  function clearForm() {
-    editId = null;
-    setVal('lam_numero', '');
-    setVal('lam_album', '');
-    setVal('lam_tipo', '');
-    const btn = $('lam_guardar');
-    if (btn) btn.textContent = 'Guardar';
-  }
-
-  function readForm() {
-    const numero = Number(getVal('lam_numero'));
-    const albumId = Number(getVal('lam_album'));
-    const tipoRaw = getVal('lam_tipo');
-    const tipoId = tipoRaw === '' ? null : Number(tipoRaw);
-
-    if (!Number.isFinite(numero)) throw new Error('El campo "Número" es obligatorio.');
-    if (!Number.isFinite(albumId)) throw new Error('Debes elegir un "Álbum".');
-
-    // API acepta "tipoLaminaId": null o número
-    return {
-      numero,
-      album: { id: albumId },
-      tipoLaminaId: (tipoId === null || Number.isNaN(tipoId)) ? null : tipoId
-    };
-  }
-
-  async function onSave() {
-    const btn = $('lam_guardar');
-    try {
-      if (btn) btn.disabled = true;
-      const body = readForm();
-
-      if (editId == null) {
-        await http.post('/api/v1/lamina/', body);
-      } else {
-        await http.put(`/api/v1/lamina/${editId}`, body);
-      }
-
-      clearForm();
-      await loadLaminas();
-    } catch (err) {
-      console.error(err);
-      alert(err?.message || 'Error al guardar la lámina.');
-    } finally {
-      if (btn) btn.disabled = false;
+  const toCreate = [];
+  for (let n = 1; n <= cantidad; n++) {
+    if (!ya.has(n)) {
+      toCreate.push({ numero: n, album: {id: +albumId}, tipo: {id: +tipoId} });
     }
   }
 
-  function onTableClick(e) {
-    const t = e.target;
-    if (!(t instanceof HTMLElement)) return;
-    const id = t.dataset.id;
-    if (!id) return;
-
-    if (t.classList.contains('lam-edit')) {
-      const row = laminasCache.find(x => String(x.id) === String(id));
-      if (!row) return;
-
-      editId = row.id;
-      setVal('lam_numero', row.numero ?? '');
-      setVal('lam_album', row?.album?.id ?? '');
-      setVal('lam_tipo', row?.tipoLaminaId ?? row?.tipoLamina?.id ?? '');
-
-      const btn = $('lam_guardar');
-      if (btn) btn.textContent = 'Actualizar';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    } else if (t.classList.contains('lam-del')) {
-      onDelete(id);
-    }
+  if (!toCreate.length) {
+    alert('No hay láminas nuevas para crear (parecen existir todas).');
+    return;
   }
 
-  async function onDelete(id) {
-    if (!confirm(`¿Eliminar la lámina #${id}?`)) return;
-    try {
-      await http.del(`/api/v1/lamina/${id}`);
-      await loadLaminas();
-    } catch (err) {
-      console.error(err);
-      alert('No se pudo eliminar la lámina.');
+  try {
+    // sin endpoint bulk, hacemos uno a uno
+    for (const item of toCreate) {
+      await api.post('/api/v1/lamina', item);
     }
+    alert(`Creadas ${toCreate.length} láminas nuevas`);
+    loadLaminas();
+  } catch (e) {
+    console.error(e);
+    alert('Error creando láminas.');
+  }
+}
+
+async function delLamina(id) {
+  if (!confirm('¿Eliminar lámina?')) return;
+  try {
+    await api.del(`/api/v1/lamina/${id}`);
+    loadLaminas();
+  } catch {
+    alert('No se pudo eliminar.');
+  }
+}
+
+// Plantilla CSV
+document.getElementById('btnTpl').addEventListener('click', () => {
+  const blob = new Blob(
+    [`numero,albumId,tipoId\n1,1,1\n2,1,2\n3,1,3\n`],
+    { type: 'text/csv;charset=utf-8' }
+  );
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'laminas_template.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+
+// Importar CSV (columnas: numero,albumId,tipoId)
+document.getElementById('lamCsv').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const header = lines.shift();
+  if (!/^numero\s*,\s*albumId\s*,\s*tipoId$/i.test(header)) {
+    alert('Cabecera CSV inválida. Debe ser: numero,albumId,tipoId');
+    return;
   }
 
-  // -------- Eventos --------
-  function wireEvents() {
-    const btnSave = $('lam_guardar');
-    const btnClear = $('lam_limpiar');
-    const btnReload = $('lam_recargar');
-    const tbody = $('lam_tbody');
+  const registros = lines.map(l => {
+    const [numero, albumId, tipoId] = l.split(',').map(x => x.trim());
+    return { numero: +numero, album: {id:+albumId}, tipo: {id:+tipoId||1} };
+  }).filter(r => r.numero > 0 && r.album.id > 0);
 
-    if (btnSave) btnSave.addEventListener('click', onSave);
-    if (btnClear) btnClear.addEventListener('click', clearForm);
-    if (btnReload) btnReload.addEventListener('click', loadLaminas);
-    if (tbody) tbody.addEventListener('click', onTableClick);
+  if (!registros.length) {
+    alert('El CSV está vacío.');
+    return;
   }
 
-  // -------- Init --------
-  document.addEventListener('DOMContentLoaded', async () => {
-    wireEvents();
-    try {
-      await loadAlbums();   // primero álbumes para mostrar nombres
-      await loadLaminas();  // luego listado
-    } catch (err) {
-      console.error(err);
-      alert('No se pudieron cargar los datos iniciales.');
+  try {
+    for (const r of registros) {
+      await api.post('/api/v1/lamina', r);
     }
-  });
+    alert(`Importadas ${registros.length} láminas`);
+    loadLaminas();
+  } catch (e) {
+    console.error(e);
+    alert('Error al importar CSV.');
+  }
+});
+
+document.getElementById('btnLamSave').addEventListener('click', saveCantidad);
+document.getElementById('btnLamClear').addEventListener('click', clearForm);
+document.getElementById('btnLamReload').addEventListener('click', loadLaminas);
+
+(async function init(){
+  await loadTipos();
+  await loadAlbums();
+  await loadLaminas();
 })();

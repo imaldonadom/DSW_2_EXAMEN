@@ -1,6 +1,7 @@
 package com.ipss.et.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,8 +11,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "albumes")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
 public class Album {
 
     @Id
@@ -21,11 +22,11 @@ public class Album {
     @Column(nullable = false, length = 150)
     private String nombre;
 
-    // Aseguramos formato ISO en JSON
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    // Acepta varias formas que podría mandar el front
+    @JsonAlias({"fecha_lanzamiento", "fecha de lanzamiento"})
     private LocalDate fechaLanzamiento;
 
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonAlias({"fecha_sorteo", "fecha sorteo"})
     private LocalDate fechaSorteo;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -38,20 +39,18 @@ public class Album {
     @Builder.Default
     private List<String> tags = new ArrayList<>();
 
-    // IMPORTANTE: nombre de columna + default 0
-    @Column(name = "cantidad_laminas", nullable = false)
-    @Builder.Default
-    private Integer cantidadLaminas = 0;
+    @Column(nullable = false)
+    @JsonAlias({"cantidad_laminas", "cantidadlaminas", "cantidad de láminas"})
+    private Integer cantidadLaminas;
 
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;
 
-    // Saneamos por si llega null desde el front
     @PrePersist @PreUpdate
-    private void sanitize() {
-        if (cantidadLaminas == null) cantidadLaminas = 0;
-        if (activo == null) activo = true;
+    private void ensureDefaults() {
         if (tags == null) tags = new ArrayList<>();
+        if (activo == null) activo = true;
+        if (cantidadLaminas == null) cantidadLaminas = 0;
     }
 }

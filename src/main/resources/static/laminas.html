@@ -1,86 +1,88 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8">
   <title>Examen 3 – Láminas</title>
-  <link rel="stylesheet" href="/css/main.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet">
   <style>
-    /* estilos mínimos si aún no tienes main.css */
-    body{margin:0;background:#0f172a;color:#e2e8f0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-    .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
-    .card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:16px;margin-bottom:18px}
-    h1{margin:0 0 12px;font-size:22px}
-    label{font-size:12px;color:#9ca3af}
-    input,select{width:100%;background:#0b1220;border:1px solid #243043;border-radius:8px;color:#e5e7eb;padding:10px}
-    .row{display:grid;grid-template-columns: 2fr 2fr 2fr 1fr; gap:12px}
-    .btn{cursor:pointer;border:0;border-radius:8px;padding:8px 12px}
-    .btn-primary{background:#2563eb;color:#fff}
-    .btn-ghost{background:#1f2937;color:#e5e7eb}
-    .btn-warn{background:#ef4444;color:#fff}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid #1f2937;font-size:14px}
-    th{color:#9ca3af;text-align:left}
-    .actions{display:flex;gap:8px;justify-content:flex-end}
-    .grid-2{display:grid;grid-template-columns: 1fr auto;gap:12px}
+    body{background:#f6f7fb}
+    .card{border:1px solid #eef0f4; box-shadow:0 1px 2px rgba(20,20,20,.04)}
   </style>
 </head>
-<body>
-  <div class="wrap">
-    <div class="card">
-      <h1>Láminas</h1>
-      <p>CRUD contra <code>/api/v1/lamina</code></p>
-    </div>
+<body class="py-4">
+<div class="container-lg">
 
-    <div class="card">
-      <form id="form-lamina">
-        <input type="hidden" id="lamina-id" />
-        <div class="row">
-          <div>
-            <label>Número</label>
-            <input type="number" id="numero" placeholder="p.ej. 1" required />
-          </div>
-          <div>
-            <label>Álbum</label>
-            <select id="albumId" required>
-              <option value="">— elige álbum —</option>
-            </select>
-          </div>
-          <div>
-            <label>Tipo de Lámina (opcional)</label>
-            <input type="number" id="tipoLaminaId" placeholder="id tipo" />
-          </div>
-          <div class="grid-2" style="align-items:end">
-            <button class="btn btn-primary" type="submit">Guardar</button>
-            <button class="btn btn-ghost" type="button" id="btn-clear">Limpiar</button>
-          </div>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="m-0">Examen 3 – Láminas</h2>
+    <a class="btn btn-outline-primary btn-sm" href="index.html">Álbumes</a>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-12 col-md-3">
+          <label class="form-label">Cantidad</label>
+          <input id="lamCantidad" class="form-control" type="number" min="1" value="60">
         </div>
-      </form>
-    </div>
 
-    <div class="card">
-      <div class="grid-2" style="margin-bottom:10px">
-        <h2 style="margin:0;font-size:18px">Listado</h2>
-        <div class="actions">
-          <button class="btn btn-ghost" id="btn-reload">Recargar</button>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Álbum</label>
+          <select id="lamAlbum" class="form-select">
+            <option value="">— elige —</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <label class="form-label">Tipo de Lámina</label>
+          <select id="lamTipo" class="form-select"></select>
         </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th style="width:70px">ID</th>
-            <th>Número</th>
-            <th>Álbum</th>
-            <th>Tipo</th>
-            <th style="width:160px;text-align:right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-laminas"></tbody>
-      </table>
+
+      <div class="mt-3 d-flex gap-2">
+        <button id="btnLamSave" class="btn btn-success">Guardar</button>
+        <button id="btnLamClear" class="btn btn-light">Limpiar</button>
+
+        <button id="btnTpl" class="btn btn-outline-primary ms-auto">Descargar plantilla CSV</button>
+        <label class="btn btn-outline-secondary">
+          Importar CSV
+          <input id="lamCsv" type="file" accept=".csv" hidden>
+        </label>
+      </div>
     </div>
   </div>
 
-<script src="/js/api.js"></script>
-<script src="/js/app-lamina.js"></script>
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex align-items-center mb-2">
+        <h5 class="m-0">Listado</h5>
+        <button id="btnLamReload" class="btn btn-outline-secondary btn-sm ms-auto">Recargar</button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Número</th>
+            <th>Álbum</th>
+            <th>Tipo</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+          </thead>
+          <tbody id="lamRows">
+          <tr><td colspan="5" class="text-center text-muted py-4">Sin registros.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/app-lamina.js"></script>
 </body>
 </html>

@@ -3,15 +3,11 @@ package com.ipss.et.service;
 import com.ipss.et.dto.AlbumCUDTO;
 import com.ipss.et.dto.AlbumDTO;
 import com.ipss.et.model.Album;
-import com.ipss.et.model.Lamina;
+import com.ipss.et.model.Categoria;
 import com.ipss.et.repository.AlbumRepository;
 import com.ipss.et.repository.CategoriaRepository;
-import com.ipss.et.repository.LaminaRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -19,97 +15,65 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AlbumService {
 
-    private final AlbumRepository albumes;
-    private final CategoriaRepository categorias;
-    private final LaminaRepository laminas;
+    private final AlbumRepository albumRepo;
+    private final CategoriaRepository categoriaRepo;
 
-    @Transactional(readOnly = true)
-    public List<AlbumDTO> listar() {
-        // Usamos el método con EntityGraph (join fetch)
-        return albumes.findAllGraph().stream().map(AlbumDTO::of).toList();
+    public List<AlbumDTO> list() {
+        return albumRepo.findAll().stream().map(this::toDTO).toList();
     }
 
-    @Transactional(readOnly = true)
-    public AlbumDTO obtener(Long id) {
-        Album a = albumes.findByIdGraph(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Álbum no encontrado"));
-        return AlbumDTO.of(a);
+    public AlbumDTO get(Long id) {
+        return toDTO(albumRepo.findById(id).orElseThrow());
     }
 
-    @Transactional
-    public AlbumDTO crear(AlbumCUDTO in) {
+    public AlbumDTO create(AlbumCUDTO dto) {
         Album a = new Album();
-        a.setNombre(in.getNombre());
-        a.setFechaLanzamiento(in.getFechaLanzamiento());
-        a.setFechaSorteo(in.getFechaSorteo());
-
-        if (in.getCategoria()!=null && in.getCategoria().get("id")!=null) {
-            a.setCategoria(categorias.findById(in.getCategoria().get("id"))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Categoría inválida")));
-        }
-
-        a.setTags(in.getTags());
-        a.setCantidadLaminas(in.getCantidadLaminas());
-        a.setActivo(true);
-        a = albumes.save(a);
-
-        // Crear automáticamente láminas 1..N
-        int n = a.getCantidadLaminas()==null?0:a.getCantidadLaminas();
-        for (int i=1;i<=n;i++) {
-            Lamina l = Lamina.builder().numero(i).album(a).build();
-            laminas.save(l);
-        }
-        // devolvemos con dependencias cargadas
-        return obtener(a.getId());
+        apply(a, dto);
+        return toDTO(albumRepo.save(a));
     }
 
-    @Transactional
-    public AlbumDTO actualizar(Long id, AlbumCUDTO in) {
-        Album a = albumes.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Álbum no encontrado"));
-
-        if (in.getNombre()!=null) a.setNombre(in.getNombre());
-        if (in.getFechaLanzamiento()!=null) a.setFechaLanzamiento(in.getFechaLanzamiento());
-        if (in.getFechaSorteo()!=null) a.setFechaSorteo(in.getFechaSorteo());
-
-        if (in.getCategoria()!=null && in.getCategoria().get("id")!=null) {
-            a.setCategoria(categorias.findById(in.getCategoria().get("id"))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Categoría inválida")));
-        }
-
-        if (in.getTags()!=null) a.setTags(in.getTags());
-
-        if (in.getCantidadLaminas()!=null && !in.getCantidadLaminas().equals(a.getCantidadLaminas())) {
-            int actual = Math.toIntExact(laminas.countByAlbumId(a.getId()));
-            int nuevo = in.getCantidadLaminas();
-            if (nuevo > actual) {
-                for (int i=actual+1;i<=nuevo;i++) {
-                    laminas.save(Lamina.builder().numero(i).album(a).build());
-                }
-            } else if (nuevo < actual) {
-                for (int i=actual;i>nuevo;i--) {
-                    laminas.findByAlbumIdAndNumero(a.getId(), i).ifPresent(laminas::delete);
-                }
-            }
-            a.setCantidadLaminas(nuevo);
-        }
-
-        albumes.save(a);
-        // devolvemos con dependencias cargadas
-        return obtener(a.getId());
+    public AlbumDTO update(Long id, AlbumCUDTO dto) {
+        Album a = albumRepo.findById(id).orElseThrow();
+        apply(a, dto);
+        return toDTO(albumRepo.save(a));
     }
 
-    @Transactional public void desactivar(Long id) {
-        Album a = albumes.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Álbum no encontrado"));
-        a.setActivo(false);
-        albumes.save(a);
+    public void delete(Long id) {
+        albumRepo.deleteById(id);
     }
 
-    @Transactional public void activar(Long id) {
-        Album a = albumes.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Álbum no encontrado"));
-        a.setActivo(true);
-        albumes.save(a);
+    // ---------------- helpers ----------------
+    private void apply(Album a, AlbumCUDTO dto) {
+        a.setNombre(dto.getNombre());
+        a.setFechaLanzamiento(dto.getFechaLanzamiento());
+        a.setFechaSorteo(dto.getFechaSorteo());
+        a.setTags(dto.getTags() != null ? dto.getTags() : List.of());
+        a.setActivo(dto.getActivo() != null ? dto.getActivo() : Boolean.TRUE);
+        a.setCantidadLaminas(dto.getCantidadLaminas() != null ? dto.getCantidadLaminas() : 0);
+
+        if (dto.getCategoriaId() == null) {
+            throw new IllegalArgumentException("Categoría inválida");
+        }
+        Categoria cat = categoriaRepo.findById(dto.getCategoriaId())
+                .orElseThrow(() -> new IllegalArgumentException("Categoría inválida"));
+        a.setCategoria(cat);
+    }
+
+    private AlbumDTO toDTO(Album a) {
+        AlbumDTO d = new AlbumDTO();
+        d.setId(a.getId());
+        d.setNombre(a.getNombre());
+        if (a.getCategoria() != null) {
+            AlbumDTO.Cat c = new AlbumDTO.Cat();
+            c.setId(a.getCategoria().getId());
+            c.setNombre(a.getCategoria().getNombre());
+            d.setCategoria(c);
+        }
+        d.setTags(a.getTags());
+        d.setActivo(a.getActivo());
+        d.setFechaLanzamiento(a.getFechaLanzamiento());
+        d.setFechaSorteo(a.getFechaSorteo());
+        d.setCantidadLaminas(a.getCantidadLaminas());
+        return d;
     }
 }

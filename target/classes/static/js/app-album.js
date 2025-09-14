@@ -1,176 +1,158 @@
-// app-album.js — CRUD Álbumes
+// js/app-album.js
 
-const API_BASE = '/api/v1';
-
-// ---------------- helpers ----------------
-const $ = s => document.querySelector(s);
-
-async function api(path, { method='GET', body } = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers: { 'Content-Type':'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try {
-      const e = await res.json();
-      msg = e?.details || e?.message || msg;
-    } catch {}
-    throw new Error(msg);
-  }
-  return res.status === 204 ? null : res.json();
+// --- helpers de fecha dd-MM-yyyy <-> yyyy-MM-dd ---------------
+function toIso(dmy) {
+  if (!dmy || !dmy.trim()) return null;
+  const [dd, mm, yyyy] = dmy.split('-');
+  if (!yyyy) return null;
+  return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+}
+function toDmy(iso) {
+  if (!iso || !iso.trim()) return '';
+  const [yyyy, mm, dd] = iso.split('-');
+  return `${dd}-${mm}-${yyyy}`;
 }
 
-function toISODate(v) {
-  if (!v) return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v; // yyyy-MM-dd
-  const p = v.replaceAll('/', '-').split('-');
-  if (p.length === 3) {
-    const [dd, mm, yyyy] = p;
-    return `${yyyy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
-  }
-  return v;
-}
+// --- fallback de categorías por si no hay endpoint -------------
+const CATEGORIAS_FALLBACK = [
+  { id: 1, nombre: 'Fútbol' },
+  { id: 2, nombre: 'Música' },
+  { id: 3, nombre: 'Cómics' },
+  { id: 4, nombre: 'Película' },
+  { id: 5, nombre: 'Manga' }
+];
+let categorias = [];
 
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-    .replaceAll('"','&quot;').replaceAll("'",'&#39;');
-}
-
-// --------------- DOM refs ----------------
-const $form   = $('#albumForm');
-const $id     = $('#id');
-const $nombre = $('#nombre');
-const $catId  = $('#categoriaId');
-const $cant   = $('#cantidadLaminas');
-const $act    = $('#activo');
-const $fL     = $('#fechaLanzamiento');
-const $fS     = $('#fechaSorteo');
-const $tags   = $('#tags');
-
-const $save   = $('#saveBtn');
-const $reset  = $('#resetBtn');
-const $reload = $('#reloadBtn');
-const $tbody  = $('#tbody');
-
-// ------------- DTO builder ---------------
-function buildDto() {
-  return {
-    nombre: ($nombre.value || '').trim(),
-    categoria: $catId.value ? { id: Number($catId.value) } : null,
-    activo: ($act.value === 'true' || $act.value === '1'),
-    fechaLanzamiento: toISODate($fL.value || null),
-    fechaSorteo:      toISODate($fS.value || null),
-    tags: ($tags.value || '').split(',').map(t => t.trim()).filter(Boolean),
-    cantidadLaminas: Number($cant.value) || 0,
-  };
-}
-
-// --------------- actions -----------------
-async function guardar(e) {
-  e?.preventDefault?.();
+async function loadCategorias() {
   try {
-    const dto = buildDto();
-    const id = $id.value || null;
-    if (id) {
-      await api(`/album/${id}`, { method:'PUT', body:dto });
-    } else {
-      await api('/album/', { method:'POST', body:dto });
-    }
-    limpiar();
-    await listar();
-    alert('Álbum guardado');
-  } catch (err) {
-    alert('Error guardando: ' + err.message);
-    console.error(err);
+    const res = await api.get('/api/v1/categoria');
+    categorias = Array.isArray(res) && res.length ? res : CATEGORIAS_FALLBACK;
+  } catch {
+    categorias = CATEGORIAS_FALLBACK;
   }
+
+  const sel = document.getElementById('albCategoria');
+  sel.innerHTML = categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
 }
 
-function limpiar() {
-  $id.value=''; $nombre.value=''; $catId.value=''; $cant.value='0';
-  $act.value='true'; $fL.value=''; $fS.value=''; $tags.value='';
-  $save.textContent='Guardar';
-}
-
-async function eliminar(id) {
-  if (!confirm('¿Eliminar álbum ' + id + '?')) return;
+// --- listado de álbumes ----------------------------------------
+async function loadAlbums() {
+  const tbody = document.getElementById('albRows');
+  tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr>`;
   try {
-    await api(`/album/${id}`, { method:'DELETE' });
-    await listar();
-  } catch (err) {
-    alert('Error eliminando: ' + err.message);
-  }
-}
-
-async function cargar(id) {
-  try {
-    const a = await api(`/album/${id}`);
-    $id.value = a.id ?? '';
-    $nombre.value = a.nombre ?? '';
-    $catId.value = a.categoria?.id ?? '';
-    $cant.value = (a.cantidadLaminas ?? a.cantidad_laminas ?? 0);
-    $act.value = String(Boolean(a.activo));
-    $fL.value = a.fechaLanzamiento || a.fecha_lanzamiento || '';
-    $fS.value = a.fechaSorteo || a.fecha_sorteo || '';
-    $tags.value = (Array.isArray(a.tags) ? a.tags.join(', ') : (a.tags || ''));
-    $save.textContent = 'Actualizar';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  } catch (err) {
-    alert('No se pudo cargar: ' + err.message);
-  }
-}
-
-async function listar() {
-  if ($tbody) $tbody.innerHTML = `<tr><td colspan="8" class="empty">Cargando…</td></tr>`;
-  try {
-    const items = await api('/album/');
-    if (!items.length) {
-      $tbody.innerHTML = `<tr><td colspan="8" class="empty">Sin registros.</td></tr>`;
+    const data = await api.get('/api/v1/album');
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Sin datos.</td></tr>`;
       return;
     }
-    $tbody.innerHTML = items.map(a => {
-      const tags = Array.isArray(a.tags) ? a.tags.map(t=>`<span class="pill">${escapeHtml(t)}</span>`).join('') : escapeHtml(a.tags||'');
-      const fechas = `
-        <div class="muted" style="font-size:12px">
-          L: ${escapeHtml(a.fechaLanzamiento || a.fecha_lanzamiento || '-') }<br>
-          S: ${escapeHtml(a.fechaSorteo || a.fecha_sorteo || '-') }
-        </div>`;
-      const cat = a.categoria?.nombre ?? a.categoria?.id ?? '';
-      const cant = (a.cantidadLaminas ?? a.cantidad_laminas ?? 0);
+    const rows = data.map(a => {
+      const catNombre = a.categoria?.nombre ?? (categorias.find(c => c.id === a.categoriaId)?.nombre) ?? '—';
+      const fechas = `L: ${a.fechaLanzamiento ? toDmy(a.fechaLanzamiento) : '—'}<br>S: ${a.fechaSorteo ? toDmy(a.fechaSorteo) : '—'}`;
+      const tags = (a.tags && a.tags.length)
+        ? a.tags.map(t => `<span class="tag me-1">${t}</span>`).join(' ')
+        : '—';
+      const activo = a.activo ? `<span class="pill-on">●</span>` : `<span class="pill-off">●</span>`;
       return `
         <tr>
-          <td>${a.id ?? ''}</td>
-          <td>${escapeHtml(a.nombre ?? '')}</td>
-          <td>${escapeHtml(String(cat))}</td>
+          <td>${a.id}</td>
+          <td>${a.nombre}</td>
+          <td>${catNombre}</td>
           <td>${tags}</td>
-          <td>${a.activo ? '✅' : '❌'}</td>
-          <td>${fechas}</td>
-          <td>${cant}</td>
-          <td class="actions">
-            <button class="btn warning" data-edit="${a.id}">Editar</button>
-            <button class="btn danger" data-del="${a.id}">Eliminar</button>
+          <td>${activo}</td>
+          <td class="text-muted small">${fechas}</td>
+          <td>${a.cantidadLaminas ?? 0}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-warning me-2" onclick="editAlbum(${a.id})">Editar</button>
+            <button class="btn btn-sm btn-danger" onclick="delAlbum(${a.id})">Eliminar</button>
           </td>
         </tr>`;
     }).join('');
-  } catch (err) {
-    $tbody.innerHTML = `<tr><td colspan="8" class="empty">Error al cargar: ${escapeHtml(err.message)}</td></tr>`;
-    console.error(err);
+    tbody.innerHTML = rows;
+  } catch (e) {
+    console.error(e);
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Error cargando datos</td></tr>`;
   }
 }
 
-// --------------- events ------------------
-$form?.addEventListener('submit', guardar);
-$reset?.addEventListener('click', limpiar);
-$reload?.addEventListener('click', listar);
+// --- cargar datos en el formulario ------------------------------
+async function editAlbum(id) {
+  try {
+    const a = await api.get(`/api/v1/album/${id}`);
+    document.getElementById('albId').value = a.id;
+    document.getElementById('albNombre').value = a.nombre ?? '';
+    const catId = a.categoria?.id ?? a.categoriaId ?? '';
+    document.getElementById('albCategoria').value = `${catId}`;
+    document.getElementById('albCantidad').value = a.cantidadLaminas ?? 0;
+    document.getElementById('albActivo').value = a.activo ? 'true' : 'false';
+    document.getElementById('albFecLan').value = a.fechaLanzamiento ? toDmy(a.fechaLanzamiento) : '';
+    document.getElementById('albFecSor').value = a.fechaSorteo ? toDmy(a.fechaSorteo) : '';
+    document.getElementById('albTags').value = (a.tags ?? []).join(', ');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) {
+    alert('No fue posible cargar el álbum.');
+  }
+}
 
-document.addEventListener('click', (e) => {
-  const del = e.target.closest('[data-del]');
-  const edit = e.target.closest('[data-edit]');
-  if (del) eliminar(del.dataset.del);
-  if (edit) cargar(edit.dataset.edit);
-});
+function clearForm() {
+  document.getElementById('albId').value = '';
+  document.getElementById('albNombre').value = '';
+  document.getElementById('albCategoria').selectedIndex = 0;
+  document.getElementById('albCantidad').value = 0;
+  document.getElementById('albActivo').value = 'true';
+  document.getElementById('albFecLan').value = '';
+  document.getElementById('albFecSor').value = '';
+  document.getElementById('albTags').value = '';
+}
 
-// init
-document.addEventListener('DOMContentLoaded', listar);
+// --- guardar (create/update) -----------------------------------
+async function saveAlbum() {
+  const id = document.getElementById('albId').value || null;
+  const body = {
+    nombre: document.getElementById('albNombre').value.trim(),
+    categoria: { id: +document.getElementById('albCategoria').value },
+    cantidadLaminas: +document.getElementById('albCantidad').value || 0,
+    activo: document.getElementById('albActivo').value === 'true',
+    fechaLanzamiento: toIso(document.getElementById('albFecLan').value),
+    fechaSorteo: toIso(document.getElementById('albFecSor').value),
+    tags: document.getElementById('albTags').value
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+  };
+
+  try {
+    if (id) {
+      await api.put(`/api/v1/album/${id}`, body);
+      alert('Álbum actualizado');
+    } else {
+      await api.post('/api/v1/album', body);
+      alert('Álbum guardado');
+    }
+    clearForm();
+    loadAlbums();
+  } catch (e) {
+    console.error(e);
+    alert('Error guardando álbum');
+  }
+}
+
+// --- eliminar ---------------------------------------------------
+async function delAlbum(id) {
+  if (!confirm('¿Eliminar álbum?')) return;
+  try {
+    await api.del(`/api/v1/album/${id}`);
+    loadAlbums();
+  } catch (e) {
+    alert('No se pudo eliminar.');
+  }
+}
+
+// --- init -------------------------------------------------------
+document.getElementById('btnSave').addEventListener('click', saveAlbum);
+document.getElementById('btnClear').addEventListener('click', clearForm);
+document.getElementById('btnReload').addEventListener('click', loadAlbums);
+
+(async function init(){
+  await loadCategorias();
+  await loadAlbums();
+})();

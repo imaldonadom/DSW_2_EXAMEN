@@ -24,63 +24,60 @@ public class ColeccionService {
     private final EstadoRepository estados;
 
     @Transactional(readOnly = true)
-    public List<ColeccionPayloads.ColeccionistaAlbumes> listarPorColeccionista(Long coleccionistaId) {
+    public List<ColeccionPayloads.ColeccionistaAlbumes.AlbumDeColeccion> listarPorColeccionista(Long coleccionistaId) {
+
         var list = colecciones.findByColeccionistaId(coleccionistaId);
 
-        Map<String,Object> colec = coleccionistas.findById(coleccionistaId)
-                .map(c -> Map.<String,Object>of("id", c.getId(), "nombre", c.getNombre()))
+        // valida existencia del coleccionista (por si te interesa devolver 404)
+        coleccionistas.findById(coleccionistaId)
+                .map(c -> Map.<String, Object>of("id", c.getId(), "nombre", c.getNombre()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Coleccionista no existe"));
 
         var out = new ArrayList<ColeccionPayloads.ColeccionistaAlbumes.AlbumDeColeccion>();
 
         for (Coleccion c : list) {
-            var lam = c.getLaminas().stream().map(ci ->
-                    ColeccionPayloads.ColeccionistaAlbumes.LaminaCantidad.builder()
-                            .id(ci.getLamina().getId())
-                            .numero(ci.getLamina().getNumero())
-                            .tipo(ci.getLamina().getTipoLamina()==null ? null :
-                                    Map.<String,Object>of(
-                                            "id", ci.getLamina().getTipoLamina().getId(),
-                                            "nombre", ci.getLamina().getTipoLamina().getNombre()
-                                    ))
-                            .cantidad(ci.getCantidad())
-                            .build()
-            ).toList();
+
+            // Construimos la lista con el tipo esperado por el builder: LaminaCantidad
+            var lam = c.getLaminas().stream()
+                    .map(ci -> {
+                        var l = ci.getLamina();
+                        // el campo tipo del DTO es un Map<String,Object>
+                        var tipo = (l.getTipo() == null)
+                                ? null
+                                : Map.<String, Object>of(
+                                        "id", l.getTipo().getId(),
+                                        "nombre", l.getTipo().getNombre()
+                                );
+
+                        return ColeccionPayloads.ColeccionistaAlbumes.LaminaCantidad.builder()
+                                .id(l.getId())
+                                .numero(l.getNumero())
+                                .tipo(tipo)
+                                .cantidad(ci.getCantidad())
+                                .build();
+                    })
+                    .toList();
 
             var alb = c.getAlbum();
 
-            Map<String,Object> cat = (alb.getCategoria()==null)
+            var cat = (alb.getCategoria() == null)
                     ? null
-                    : Map.<String,Object>of(
-                        "id", alb.getCategoria().getId(),
-                        "nombre", alb.getCategoria().getNombre()
-                      );
+                    : Map.<String, Object>of(
+                            "id", alb.getCategoria().getId(),
+                            "nombre", alb.getCategoria().getNombre()
+                    );
 
-            Map<String,Object> estado = (c.getEstado()==null)
-                    ? null
-                    : Map.<String,Object>of(
-                        "id", c.getEstado().getId(),
-                        "nombre", c.getEstado().getNombre()
-                      );
-
-            out.add(ColeccionPayloads.ColeccionistaAlbumes.AlbumDeColeccion.builder()
-                    .id(alb.getId())
-                    .nombre(alb.getNombre())
-                    .fechaDeLanzamiento(alb.getFechaLanzamiento()!=null ? alb.getFechaLanzamiento().toString() : null)
-                    .fechaSorteo(alb.getFechaSorteo()!=null ? alb.getFechaSorteo().toString() : null)
-                    .categoria(cat)
-                    .tags(alb.getTags())
-                    .cantidadDeLaminas(alb.getCantidadLaminas())
-                    .laminas(lam)
-                    .estado(estado)
-                    .activo(c.getActivo())
-                    .build());
+            out.add(
+                    ColeccionPayloads.ColeccionistaAlbumes.AlbumDeColeccion.builder()
+                            .id(alb.getId())
+                            .nombre(alb.getNombre())
+                            .categoria(cat)
+                            .laminas(lam) // List<LaminaCantidad>
+                            .build()
+            );
         }
 
-        return List.of(ColeccionPayloads.ColeccionistaAlbumes.builder()
-                .coleccionista(colec)
-                .album(out)
-                .build());
+        return out;
     }
 
     @Transactional
@@ -102,7 +99,7 @@ public class ColeccionService {
                     .activo(Boolean.TRUE.equals(albIn.getActivo()))
                     .build();
 
-            if (albIn.getEstado()!=null && albIn.getEstado().get("id")!=null) {
+            if (albIn.getEstado() != null && albIn.getEstado().get("id") != null) {
                 c.setEstado(estados.findById(albIn.getEstado().get("id"))
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado inválido")));
             }
@@ -112,8 +109,13 @@ public class ColeccionService {
             for (var lamIn : albIn.getLaminas()) {
                 Lamina lam = laminas.findById(lamIn.getId())
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lámina inválida"));
+
                 var item = ColeccionItem.builder()
-                        .coleccion(c).lamina(lam).cantidad(lamIn.getCantidad()).build();
+                        .coleccion(c)
+                        .lamina(lam)
+                        .cantidad(lamIn.getCantidad())
+                        .build();
+
                 c.getLaminas().add(item);
             }
 

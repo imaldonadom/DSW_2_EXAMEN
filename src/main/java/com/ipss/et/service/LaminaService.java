@@ -2,15 +2,15 @@ package com.ipss.et.service;
 
 import com.ipss.et.dto.LaminaCUDTO;
 import com.ipss.et.dto.LaminaDTO;
+import com.ipss.et.model.Album;
 import com.ipss.et.model.Lamina;
+import com.ipss.et.model.TipoLamina;
 import com.ipss.et.repository.AlbumRepository;
 import com.ipss.et.repository.LaminaRepository;
 import com.ipss.et.repository.TipoLaminaRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -23,53 +23,43 @@ public class LaminaService {
     private final TipoLaminaRepository tipos;
 
     @Transactional(readOnly = true)
-    public List<LaminaDTO> listar() {
-        return laminas.findAll().stream().map(LaminaDTO::of).toList();
-    }
-
-    @Transactional(readOnly = true)
-    public LaminaDTO obtener(Long id) {
-        Lamina l = laminas.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Lámina no encontrada"));
-        return LaminaDTO.of(l);
+    public List<LaminaDTO> listar(Long albumId) {
+        List<Lamina> data = (albumId != null)
+                ? laminas.findByAlbumIdOrderByNumeroAsc(albumId)
+                : laminas.findAllByOrderByAlbumIdAscNumeroAsc();
+        return data.stream().map(LaminaDTO::of).toList();
     }
 
     @Transactional
     public LaminaDTO crear(LaminaCUDTO in) {
-        Lamina l = new Lamina();
-        l.setNumero(in.getNumero());
+        if (in.getAlbumId() == null) {
+            throw new IllegalArgumentException("Álbum requerido");
+        }
+        Album alb = albumes.findById(in.getAlbumId())
+                .orElseThrow(() -> new IllegalArgumentException("Álbum inválido"));
 
-        if (in.getTipo()!=null && in.getTipo().get("id")!=null) {
-            l.setTipoLamina(tipos.findById(in.getTipo().get("id"))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tipo de lámina inválido")));
+        TipoLamina tipo = null;
+        if (in.getTipoId() != null) {
+            tipo = tipos.findById(in.getTipoId())
+                    .orElseThrow(() -> new IllegalArgumentException("Tipo inválido"));
         }
 
-        Long albumId = in.getAlbum()==null?null: in.getAlbum().get("id");
-        if (albumId==null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Album requerido");
-
-        l.setAlbum(albumes.findById(albumId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Álbum inválido")));
+        Lamina l = Lamina.builder()
+                .numero(in.getNumero() != null ? in.getNumero() : 1)
+                .album(alb)
+                .tipo(tipo)
+                .build();
 
         return LaminaDTO.of(laminas.save(l));
     }
 
     @Transactional
-    public LaminaDTO actualizar(Long id, LaminaCUDTO in) {
-        Lamina l = laminas.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Lámina no encontrada"));
-
-        if (in.getNumero()!=null) l.setNumero(in.getNumero());
-        if (in.getTipo()!=null && in.getTipo().get("id")!=null) {
-            l.setTipoLamina(tipos.findById(in.getTipo().get("id"))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tipo de lámina inválido")));
-        }
-        if (in.getAlbum()!=null && in.getAlbum().get("id")!=null) {
-            l.setAlbum(albumes.findById(in.getAlbum().get("id"))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Álbum inválido")));
-        }
-        return LaminaDTO.of(laminas.save(l));
+    public void eliminar(Long id) {
+        laminas.deleteById(id);
     }
 
     @Transactional
-    public void eliminar(Long id) { laminas.deleteById(id); }
+    public List<LaminaDTO> crearMasivo(List<LaminaCUDTO> items) {
+        return items.stream().map(this::crear).toList();
+    }
 }

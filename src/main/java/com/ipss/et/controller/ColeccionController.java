@@ -3,53 +3,47 @@ package com.ipss.et.controller;
 import com.ipss.et.dto.ColeccionPayloads;
 import com.ipss.et.service.ColeccionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/coleccion/coleccionista")
-@CrossOrigin
+@RequestMapping("/api/v1/coleccion")
 @RequiredArgsConstructor
+@CrossOrigin
 public class ColeccionController {
 
     private final ColeccionService service;
 
-    @GetMapping("/")
-    public List<ColeccionPayloads.ColeccionistaAlbumes> listar(@RequestParam Long id) {
-        return service.listarPorColeccionista(id);
+    // Devuelve la lista de álbumes que tiene el coleccionista en su colección
+    @GetMapping("/{coleccionistaId}")
+    public List<ColeccionPayloads.ColeccionistaAlbumes.AlbumDeColeccion> listarPorColeccionista(
+            @PathVariable Long coleccionistaId
+    ) {
+        return service.listarPorColeccionista(coleccionistaId);
     }
 
-    @GetMapping("/{id}")
-    public List<ColeccionPayloads.ColeccionistaAlbumes> obtener(@PathVariable Long id) {
-        return service.listarPorColeccionista(id);
+    // Alias opcional (si tenías otro endpoint similar, deja ambos apuntando al mismo tipo)
+    @GetMapping("/{coleccionistaId}/albumes")
+    public List<ColeccionPayloads.ColeccionistaAlbumes.AlbumDeColeccion> listarAlbumesDeColeccion(
+            @PathVariable Long coleccionistaId
+    ) {
+        return service.listarPorColeccionista(coleccionistaId);
     }
 
-    @PostMapping("/{id}")
-    public ResponseEntity<Void> crear(@PathVariable Long id,
-                                      @RequestBody ColeccionPayloads.UpsertColeccion body) {
-        service.upsert(id, body, false);
-        return ResponseEntity.ok().build();
+    // Crea/actualiza la colección del coleccionista. Usa ?replace=true para reemplazar por completo
+    @PutMapping("/{coleccionistaId}")
+    public void upsert(
+            @PathVariable Long coleccionistaId,
+            @RequestBody ColeccionPayloads.UpsertColeccion body,
+            @RequestParam(name = "replace", defaultValue = "false") boolean replace
+    ) {
+        service.upsert(coleccionistaId, body, replace);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Void> reemplazar(@PathVariable Long id,
-                                           @RequestBody ColeccionPayloads.UpsertColeccion body) {
-        service.upsert(id, body, true);
-        return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarTodo(@PathVariable Long id) {
-        service.deleteAll(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/{id}")
-    public ResponseEntity<Void> reactivar(@PathVariable Long id,
-                                          @RequestBody ColeccionPayloads.UpsertColeccion body) {
-        service.upsert(id, body, false);
-        return ResponseEntity.ok().build();
+    // Elimina toda la colección del coleccionista
+    @DeleteMapping("/{coleccionistaId}")
+    public void deleteAll(@PathVariable Long coleccionistaId) {
+        service.deleteAll(coleccionistaId);
     }
 }
