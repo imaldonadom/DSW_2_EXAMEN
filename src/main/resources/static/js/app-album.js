@@ -1,57 +1,53 @@
 (() => {
   const API = '/api/v1';
-  const $ = sel => document.querySelector(sel);
+  const $ = (s) => document.querySelector(s);
 
   const ui = {
-    nombre:  $('#f-nombre'),
-    categoria: $('#f-categoria'),
+    nombre:   $('#f-nombre'),
+    categoria:$('#f-categoria'),
     cantidad: $('#f-cantidad'),
-    flanz:   $('#f-flanz'),
-    fsor:    $('#f-fsor'),
-    activo:  $('#f-activo'),
-    tags:    $('#f-tags'),
+    flanz:    $('#f-flanz'),
+    fsor:     $('#f-fsor'),
+    activo:   $('#f-activo'),
+    tags:     $('#f-tags'),
 
-    rows:    $('#rows'),
-    gridMsg: $('#grid-msg'),
+    rows:     $('#rows'),
+    gridMsg:  $('#grid-msg'),
 
-    btnSave: $('#btn-guardar'),
+    btnSave:  $('#btn-guardar'),
     btnClear: $('#btn-limpiar'),
-    btnReload: $('#btn-reload')
+    btnReload:$('#btn-reload'),
   };
 
-  async function http(url, opts={}) {
+  // fetch con salida de error clara
+  async function http(url, opts = {}) {
     const res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json' },
-      ...opts
+      ...opts,
+      headers: { Accept: 'application/json', ...(opts.headers || {}) },
     });
+    const isJson = (res.headers.get('content-type') || '').includes('application/json');
+
     if (!res.ok) {
-      const txt = await res.text().catch(()=>'');
-      throw new Error(`HTTP ${res.status}: ${txt || res.statusText}`);
+      const body = isJson ? await res.json().catch(() => ({})) : await res.text().catch(() => '');
+      const details = isJson ? JSON.stringify(body) : body;
+      throw new Error(`HTTP ${res.status} ${res.statusText} → ${details}`);
     }
-    return res.status === 204 ? null : await res.json();
+    return res.status === 204 ? null : (isJson ? res.json() : res.text());
   }
 
-  function fmtDate(d) { // d puede ser "2026-02-01" o null
-    return d ? d : '-';
-  }
+  const fmtDate = (d) => d ?? '-';
 
-  function chip(text) {
-    const span = document.createElement('span');
-    span.className = 'badge text-bg-light me-1';
-    span.textContent = text;
-    return span;
-  }
+  const chip = (t) => {
+    const s = document.createElement('span');
+    s.className = 'badge text-bg-light me-1';
+    s.textContent = t;
+    return s;
+  };
 
   async function loadCategorias() {
     try {
       const data = await http(`${API}/categoria`);
-      ui.categoria.innerHTML = '';
-      // placeholder
-      const opt0 = document.createElement('option');
-      opt0.value = '';
-      opt0.textContent = '— elige —';
-      ui.categoria.appendChild(opt0);
-
+      ui.categoria.innerHTML = `<option value="">— elige —</option>`;
       for (const c of data) {
         const opt = document.createElement('option');
         opt.value = c.id;
@@ -59,51 +55,47 @@
         ui.categoria.appendChild(opt);
       }
     } catch (e) {
-      console.error(e);
+      console.error('loadCategorias:', e);
       ui.categoria.innerHTML = `<option value="">(error)</option>`;
     }
   }
 
   async function loadAlbumes() {
     ui.rows.innerHTML = '';
-    ui.gridMsg.textContent = 'Cargando...';
+    ui.gridMsg.textContent = 'Cargando…';
     try {
       const data = await http(`${API}/album`);
       ui.gridMsg.textContent = data.length ? '' : 'Sin registros.';
+
       for (const a of data) {
         const tr = document.createElement('tr');
-        const td = (...cells) => cells.map(html => {
-          const c = document.createElement('td');
-          if (html instanceof Node) c.appendChild(html); else c.innerHTML = html;
-          return c;
-        });
 
-        // tags
-        const tagsCell = document.createElement('div');
-        (a.tags || []).forEach(t => tagsCell.appendChild(chip(t)));
+        const tagsTd = document.createElement('td');
+        const wrap = document.createElement('div');
+        (a.tags || []).forEach((t) => wrap.appendChild(chip(t)));
+        tagsTd.appendChild(wrap);
 
-        // fechas (2 líneas)
-        const fechas = document.createElement('div');
-        fechas.innerHTML = `L: <strong>${fmtDate(a.fechaLanzamiento)}</strong><br>S: <strong>${fmtDate(a.fechaSorteo)}</strong>`;
+        tr.innerHTML = `
+          <td>${a.id ?? ''}</td>
+          <td>${a.nombre ?? ''}</td>
+          <td>${a.categoria?.nombre ?? '-'}</td>
+          <td></td>
+          <td>${a.activo ? '✔️' : '—'}</td>
+          <td>L: <strong>${fmtDate(a.fechaLanzamiento)}</strong><br>S: <strong>${fmtDate(a.fechaSorteo)}</strong></td>
+          <td>${a.cantidadLaminas ?? 0}</td>
+          <td>
+            <button class="btn btn-sm btn-warning" disabled>Editar</button>
+            <button class="btn btn-sm btn-danger" disabled>Eliminar</button>
+          </td>
+        `;
+        // Reemplazo la 4ª celda por los chips de tags
+        tr.children[3].replaceWith(tagsTd);
 
-        tr.append(
-          ...td(
-            a.id,
-            a.nombre ?? '',
-            a.categoria ? a.categoria.nombre : '-',
-            tagsCell,
-            a.activo ? '✔️' : '—',
-            fechas,
-            a.cantidadLaminas ?? 0,
-            `<button class="btn btn-sm btn-warning" disabled>Editar</button>
-             <button class="btn btn-sm btn-danger" disabled>Eliminar</button>`
-          )
-        );
         ui.rows.appendChild(tr);
       }
     } catch (e) {
-      console.error(e);
-      ui.gridMsg.textContent = 'Error cargando datos';
+      console.error('loadAlbumes:', e);
+      ui.gridMsg.textContent = e.message || 'Error cargando datos';
     }
   }
 
@@ -120,19 +112,25 @@
         categoriaId,
         cantidadLaminas: Number(ui.cantidad.value || 0),
         activo: ui.activo.value === 'true',
-        fechaLanzamiento: ui.flanz.value || null, // yyyy-MM-dd
+        fechaLanzamiento: ui.flanz.value || null,
         fechaSorteo: ui.fsor.value || null,
         tags: (ui.tags.value || '')
-                .split(',')
-                .map(s => s.trim())
-                .filter(Boolean)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
       };
-      await http(`${API}/album`, { method:'POST', body: JSON.stringify(payload) });
+
+      await http(`${API}/album`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
       limpiar();
       await loadAlbumes();
       alert('Álbum guardado');
     } catch (e) {
-      console.error(e);
+      console.error('guardar:', e);
       alert(`Error guardando: ${e.message}`);
     }
   }
@@ -147,9 +145,9 @@
     ui.tags.value = '';
   }
 
-  ui.btnSave.addEventListener('click', guardar);
-  ui.btnClear.addEventListener('click', limpiar);
-  ui.btnReload.addEventListener('click', loadAlbumes);
+  ui.btnSave?.addEventListener('click', guardar);
+  ui.btnClear?.addEventListener('click', limpiar);
+  ui.btnReload?.addEventListener('click', loadAlbumes);
 
   // init
   loadCategorias().then(loadAlbumes);

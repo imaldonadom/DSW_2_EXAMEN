@@ -52,6 +52,7 @@ com\ipss\et\dto\ColeccionPayloads$UpsertColeccion$UpsertColeccionBuilder.class
 com\ipss\et\model\Lamina.class
 com\ipss\et\model\TipoLamina$TipoLaminaBuilder.class
 com\ipss\et\model\Coleccionista$ColeccionistaBuilder.class
+com\ipss\et\service\AlbumServiceImpl.class
 com\ipss\et\config\SecurityConfig.class
 com\ipss\et\repository\AlbumRepository.class
 com\ipss\et\config\ApiExceptionHandler.class

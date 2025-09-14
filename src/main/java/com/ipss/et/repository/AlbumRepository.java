@@ -11,12 +11,21 @@ import java.util.Optional;
 
 public interface AlbumRepository extends JpaRepository<Album, Long> {
 
-    // Carga categoría y tags para evitar LazyInitializationException en DTO
+    // Trae categoría y tags para evitar LazyInitializationException
     @EntityGraph(attributePaths = {"categoria", "tags"})
     @Query("select a from Album a")
-    List<Album> findAllGraph();
+    List<Album> findAllWithCategoriaAndTags();
 
     @EntityGraph(attributePaths = {"categoria", "tags"})
     @Query("select a from Album a where a.id = :id")
-    Optional<Album> findByIdGraph(@Param("id") Long id);
+    Optional<Album> findByIdWithCategoriaAndTags(@Param("id") Long id);
+
+    // aliases (si en otras partes llaman a estos nombres)
+    @EntityGraph(attributePaths = {"categoria", "tags"})
+    @Query("select a from Album a")
+    default List<Album> findAllGraph() { return findAllWithCategoriaAndTags(); }
+
+    @EntityGraph(attributePaths = {"categoria", "tags"})
+    @Query("select a from Album a where a.id = :id")
+    default Optional<Album> findByIdGraph(@Param("id") Long id) { return findByIdWithCategoriaAndTags(id); }
 }
