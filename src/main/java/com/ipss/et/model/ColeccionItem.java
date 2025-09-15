@@ -10,7 +10,12 @@ public class ColeccionItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Si aún no manejas usuarios/autenticación, usa 1L fijo
+    // Relación que EXIGE mappedBy = "coleccion" en Coleccion.laminas
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coleccion_id", nullable = false)
+    private Coleccion coleccion;
+
+    // Si aún no manejas usuarios/autenticación, usa 1L fijo en la capa de servicio
     @Column(name = "coleccionista_id", nullable = false)
     private Long coleccionistaId;
 
@@ -28,9 +33,12 @@ public class ColeccionItem {
     @Column(nullable = false)
     private Boolean activo = true;
 
-    // ----- getters / setters -----
+    // ===== Getters y Setters =====
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public Coleccion getColeccion() { return coleccion; }
+    public void setColeccion(Coleccion coleccion) { this.coleccion = coleccion; }
 
     public Long getColeccionistaId() { return coleccionistaId; }
     public void setColeccionistaId(Long coleccionistaId) { this.coleccionistaId = coleccionistaId; }

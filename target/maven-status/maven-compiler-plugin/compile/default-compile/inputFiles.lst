@@ -35,5 +35,6 @@ C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\repository\TipoLaminaRepo
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\AlbumService.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\AlbumServiceImpl.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\ColeccionService.java
+C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\impl\ColeccionServiceImpl.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\impl\LaminaServiceImpl.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\LaminaService.java
