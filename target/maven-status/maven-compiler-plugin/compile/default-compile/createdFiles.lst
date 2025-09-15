@@ -1,6 +1,7 @@
 com\ipss\et\model\Categoria$CategoriaBuilder.class
 com\ipss\et\service\LaminaService.class
 com\ipss\et\controller\AlbumController.class
+com\ipss\et\service\LaminaService$Item.class
 com\ipss\et\dto\AlbumDTO$AlbumDTOBuilder.class
 com\ipss\et\repository\LaminaRepository.class
 com\ipss\et\model\Coleccion$ColeccionBuilder.class
@@ -50,6 +51,7 @@ com\ipss\et\repository\EstadoRepository.class
 com\ipss\et\model\Estado.class
 com\ipss\et\dto\ColeccionPayloads$UpsertColeccion$UpsertColeccionBuilder.class
 com\ipss\et\model\Lamina.class
+com\ipss\et\service\impl\LaminaServiceImpl.class
 com\ipss\et\model\TipoLamina$TipoLaminaBuilder.class
 com\ipss\et\model\Coleccionista$ColeccionistaBuilder.class
 com\ipss\et\service\AlbumServiceImpl.class

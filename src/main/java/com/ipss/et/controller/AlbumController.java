@@ -2,7 +2,7 @@ package com.ipss.et.controller;
 
 import com.ipss.et.dto.AlbumCUDTO;
 import com.ipss.et.dto.AlbumDTO;
-import com.ipss.et.service.AlbumServiceImpl; // uso la impl para poder llamar a obtener(), pero puedes inyectar la interfaz si también la declara
+import com.ipss.et.service.AlbumService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -14,21 +14,26 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AlbumController {
 
-    private final AlbumServiceImpl service;
+    private final AlbumService service;
 
     @GetMapping
     public List<AlbumDTO> list() {
-        return service.listar();
-    }
-
-    @GetMapping("/{id}")
-    public AlbumDTO get(@PathVariable Long id) {
-        return service.obtener(id);
+        return service.list();
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public AlbumDTO create(@RequestBody AlbumCUDTO body) {
-        return service.crear(body);
+    public AlbumDTO create(@RequestBody AlbumCUDTO in) {
+        return service.create(in);
+    }
+
+    @PutMapping("/{id}")
+    public AlbumDTO update(@PathVariable Long id, @RequestBody AlbumCUDTO in) {
+        return service.update(id, in);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        service.delete(id);
     }
 }
