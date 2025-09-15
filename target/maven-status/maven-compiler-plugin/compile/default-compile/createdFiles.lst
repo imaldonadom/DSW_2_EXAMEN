@@ -1,7 +1,6 @@
 com\ipss\et\model\Categoria$CategoriaBuilder.class
 com\ipss\et\service\LaminaService.class
 com\ipss\et\controller\AlbumController.class
-com\ipss\et\service\LaminaService$Item.class
 com\ipss\et\dto\AlbumDTO$AlbumDTOBuilder.class
 com\ipss\et\repository\LaminaRepository.class
 com\ipss\et\model\Coleccion$ColeccionBuilder.class

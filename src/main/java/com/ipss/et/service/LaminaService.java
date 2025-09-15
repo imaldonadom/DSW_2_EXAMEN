@@ -7,14 +7,16 @@ import java.util.Map;
 
 public interface LaminaService {
 
-  Map<String, Integer> generar(Long albumId, Long tipoId, Integer cantidad);
+    Map<String, Integer> generar(Long albumId, Long tipoId, Integer cantidad);
 
-  Map<String, Integer> bulkUpsert(Long albumId, List<Item> items);
+    List<Lamina> listByAlbum(Long albumId);
 
-  List<Lamina> list(Long albumId);
+    /** Elimina 1 lámina por ID. */
+    void delete(Long id);
 
-  void delete(Long id);
+    /** Elimina una selección de láminas por sus IDs. Devuelve cuántas se eliminaron. */
+    int deleteSelection(List<Long> ids);
 
-  // Item usado por el bulk (CSV o JSON)
-  record Item(Integer numero, Long tipoId) {}
+    /** Elimina TODAS las láminas de un álbum. Devuelve cuántas se eliminaron. */
+    int deleteAllByAlbum(Long albumId);
 }
