@@ -14,6 +14,7 @@ com\ipss\et\repository\ColeccionItemRepository.class
 com\ipss\et\model\Coleccion.class
 com\ipss\et\dto\ColeccionDtos.class
 com\ipss\et\dto\ColeccionPayloads$UpsertColeccion$AlbumIn.class
+com\ipss\et\controller\LaminaCommandController.class
 com\ipss\et\dto\LaminaDTO$LaminaDTOBuilder.class
 com\ipss\et\dto\LaminaCUDTO$LaminaCUDTOBuilder.class
 com\ipss\et\dto\AlbumCUDTO.class
@@ -37,7 +38,6 @@ com\ipss\et\dto\ColeccionPayloads$ColeccionistaAlbumes$AlbumDeColeccion$AlbumDeC
 com\ipss\et\dto\AlbumDTO$Cat.class
 com\ipss\et\dto\ColeccionPayloads.class
 com\ipss\et\model\Coleccionista.class
-com\ipss\et\controller\LaminaController.class
 com\ipss\et\repository\ColeccionistaRepository.class
 com\ipss\et\model\Categoria.class
 com\ipss\et\dto\ColeccionPayloads$ColeccionistaAlbumes$AlbumDeColeccion.class
