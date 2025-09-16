@@ -5,10 +5,14 @@ com\ipss\et\service\ColeccionService$ItemQ.class
 com\ipss\et\dto\AlbumDTO$AlbumDTOBuilder.class
 com\ipss\et\repository\LaminaRepository.class
 com\ipss\et\model\Coleccion$ColeccionBuilder.class
+com\ipss\et\dto\ColeccionDtos$AltaUnitariaReq.class
+com\ipss\et\repository\ColeccionLaminaRepository.class
 com\ipss\et\service\ColeccionService.class
+com\ipss\et\dto\ColeccionDtos$TotalesResp.class
 com\ipss\et\dto\AlbumDTO.class
 com\ipss\et\repository\ColeccionItemRepository.class
 com\ipss\et\model\Coleccion.class
+com\ipss\et\dto\ColeccionDtos.class
 com\ipss\et\dto\ColeccionPayloads$UpsertColeccion$AlbumIn.class
 com\ipss\et\dto\LaminaDTO$LaminaDTOBuilder.class
 com\ipss\et\dto\LaminaCUDTO$LaminaCUDTOBuilder.class
@@ -25,7 +29,9 @@ com\ipss\et\Examen3Application.class
 com\ipss\et\dto\ColeccionPayloads$ColeccionistaAlbumes$ColeccionistaAlbumesBuilder.class
 com\ipss\et\config\LocalDateStringConverter.class
 com\ipss\et\dto\ColeccionPayloads$UpsertColeccion$LaminaIn$LaminaInBuilder.class
+com\ipss\et\model\ColeccionLamina.class
 com\ipss\et\repository\ColeccionRepository.class
+com\ipss\et\service\ColeccionLaminaService.class
 com\ipss\et\dto\ColeccionPayloads$ColeccionistaAlbumes$AlbumDeColeccion$AlbumDeColeccionBuilder.class
 com\ipss\et\dto\AlbumDTO$Cat.class
 com\ipss\et\dto\ColeccionPayloads.class
@@ -46,6 +52,7 @@ com\ipss\et\dto\LaminaDTO.class
 com\ipss\et\controller\ColeccionController.class
 com\ipss\et\controller\TipoLaminaController.class
 com\ipss\et\dto\ColeccionPayloads$UpsertColeccion$AlbumIn$AlbumInBuilder.class
+com\ipss\et\controller\ColeccionLaminaController.class
 com\ipss\et\dto\ColeccionPayloads$ColeccionistaAlbumes.class
 com\ipss\et\repository\EstadoRepository.class
 com\ipss\et\model\Estado.class

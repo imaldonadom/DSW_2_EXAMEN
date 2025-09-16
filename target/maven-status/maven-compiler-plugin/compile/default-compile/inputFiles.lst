@@ -6,11 +6,13 @@ C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\config\SecurityConfig.jav
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\AlbumController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\CategoriaController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\ColeccionController.java
+C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\ColeccionLaminaController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\LaminaController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\PingController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\TipoLaminaController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\AlbumCUDTO.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\AlbumDTO.java
+C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\ColeccionDtos.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\ColeccionPayloads.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\ComboDTO.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\dto\LaminaCUDTO.java
@@ -21,6 +23,7 @@ C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\model\Categoria.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\model\Coleccion.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\model\Coleccionista.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\model\ColeccionItem.java
+C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\model\ColeccionLamina.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\model\Estado.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\model\Lamina.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\model\TipoLamina.java
@@ -28,12 +31,14 @@ C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\repository\AlbumRepositor
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\repository\CategoriaRepository.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\repository\ColeccionistaRepository.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\repository\ColeccionItemRepository.java
+C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\repository\ColeccionLaminaRepository.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\repository\ColeccionRepository.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\repository\EstadoRepository.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\repository\LaminaRepository.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\repository\TipoLaminaRepository.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\AlbumService.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\AlbumServiceImpl.java
+C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\ColeccionLaminaService.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\ColeccionService.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\impl\ColeccionServiceImpl.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\service\impl\LaminaServiceImpl.java

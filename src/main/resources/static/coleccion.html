@@ -1,147 +1,240 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   <title>Examen 3 – Coleccionista</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background: #fafafa; }
-    .page { max-width: 1180px; margin: 24px auto; }
-    .sticky-actions { position: sticky; top: 0; background: #fff; z-index: 2; }
-    .table-sm td, .table-sm th { padding: .35rem .5rem; }
-    .mono { font-variant-numeric: tabular-nums; }
-    .card h6 { margin-bottom: .75rem; }
-    .w-110 { width: 110px; }
-    .w-80 { width: 80px; }
-    .w-60 { width: 60px; }
+    body { padding: 24px; }
+    .card-mini { min-height: 84px; }
+    td .btn { padding: .15rem .4rem; }
   </style>
 </head>
 <body>
-<div class="page">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="m-0">Examen 3 – Coleccionista</h3>
-    <a class="btn btn-outline-secondary" href="laminas.html">Láminas</a>
+<div class="container">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h3>Examen 3 – Coleccionista</h3>
+    <span class="badge text-bg-secondary">Láminas</span>
   </div>
 
-  <!-- Filtros -->
-  <div class="card mb-3">
-    <div class="card-body row g-3 align-items-end">
-      <div class="col-md-5">
-        <label class="form-label">Álbum</label>
-        <select id="sel-album" class="form-select"></select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Total láminas</label>
-        <input id="inp-capacidad" type="text" class="form-control mono" disabled />
-      </div>
-      <div class="col-md-5 text-end">
-        <div class="btn-group">
-          <button id="btn-descargar" class="btn btn-outline-secondary">Descargar plantilla CSV</button>
-          <label class="btn btn-outline-secondary mb-0">
-            Seleccionar CSV
-            <input id="file-csv" type="file" accept=".csv" hidden />
-          </label>
-          <button id="btn-importar" class="btn btn-primary">Importar CSV</button>
-          <button id="btn-recargar" class="btn btn-outline-secondary">Recargar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Totales + Form -->
   <div class="row g-3">
-    <!-- Totales -->
-    <div class="col-lg-7">
+    <div class="col-lg-8">
       <div class="card">
         <div class="card-body">
-          <h6>Totales</h6>
-          <div class="row g-3">
-            <div class="col-6 col-md-3">
-              <div class="form-floating">
-                <input id="tot-capacidad" class="form-control mono" disabled />
-                <label>Total álbum</label>
-              </div>
+          <div class="row g-2 align-items-center">
+            <div class="col-md-8">
+              <label class="form-label">Álbum</label>
+              <select id="albumSel" class="form-select">
+                <!-- Cargar dinámico si quieres, aquí va ejemplo -->
+                <option value="1">copa libertadores 2026</option>
+              </select>
             </div>
-            <div class="col-6 col-md-3">
-              <div class="form-floating">
-                <input id="tot-coleccionadas" class="form-control mono" disabled />
-                <label>Coleccionadas</label>
-              </div>
+            <div class="col-md-4">
+              <label class="form-label">Total láminas</label>
+              <input id="totalAlbum" class="form-control" value="150" disabled>
             </div>
-            <div class="col-6 col-md-3">
-              <div class="form-floating">
-                <input id="tot-faltan" class="form-control mono" disabled />
-                <label>Faltan</label>
-              </div>
+          </div>
+
+          <div class="mt-3 d-flex gap-2">
+            <a id="btnPlantilla" class="btn btn-outline-secondary">Descargar plantilla CSV</a>
+            <label class="btn btn-outline-primary mb-0">
+              Seleccionar CSV <input id="csvFile" type="file" accept=".csv" hidden>
+            </label>
+            <button id="btnImportar" class="btn btn-primary">Importar CSV</button>
+            <button id="btnRecargar" class="btn btn-outline-secondary">Recargar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3 g-2">
+        <div class="col-3">
+          <div class="card card-mini text-center">
+            <div class="card-body">
+              <div class="small text-muted">Total álbum</div>
+              <div id="m_total" class="fw-bold">0</div>
             </div>
-            <div class="col-6 col-md-3">
-              <div class="form-floating">
-                <input id="tot-duplicadas" class="form-control mono" disabled />
-                <label>Duplicadas</label>
-              </div>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="card card-mini text-center">
+            <div class="card-body">
+              <div class="small text-muted">Coleccionadas</div>
+              <div id="m_coleccionadas" class="fw-bold">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="card card-mini text-center">
+            <div class="card-body">
+              <div class="small text-muted">Faltan</div>
+              <div id="m_faltan" class="fw-bold">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="card card-mini text-center">
+            <div class="card-body">
+              <div class="small text-muted">Duplicadas</div>
+              <div id="m_duplicadas" class="fw-bold">0</div>
             </div>
           </div>
         </div>
       </div>
+
+      <div class="card mt-3">
+        <div class="card-body">
+          <h6 class="mb-3">Detalle de mi colección</h6>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>N°</th>
+                  <th>Álbum</th>
+                  <th>Tipo</th>
+                  <th class="text-center">Cant.</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="grid"></tbody>
+            </table>
+          </div>
+          <div class="small text-muted">Click en +/- para ajustar cantidad, o Eliminar para quitarla.</div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Ingreso unitario -->
-    <div class="col-lg-5">
+    <div class="col-lg-4">
       <div class="card">
         <div class="card-body">
           <h6>Ingreso unitario</h6>
-          <div class="row g-3">
-            <div class="col-5">
+          <div class="row g-2">
+            <div class="col-8">
               <label class="form-label">N° lámina</label>
-              <input id="inp-nro" type="number" min="1" class="form-control mono" placeholder="p.ej. 7" />
+              <input id="inNumero" class="form-control" placeholder="p.ej. 7">
             </div>
-            <div class="col-5">
+            <div class="col-4">
               <label class="form-label">Cantidad</label>
-              <input id="inp-cantidad" type="number" min="1" class="form-control mono" value="1" />
-            </div>
-            <div class="col-2 d-grid">
-              <label class="form-label">&nbsp;</label>
-              <button id="btn-agregar" class="btn btn-success">Agregar</button>
+              <input id="inCantidad" class="form-control" type="number" value="1" min="1">
             </div>
           </div>
-          <small class="text-muted d-block mt-2">
-            Consejo: usa la plantilla CSV para cargas grandes.
-          </small>
+          <div class="mt-2 small text-muted">Consejo: usa la plantilla CSV para cargas grandes.</div>
+          <div class="mt-3 d-grid">
+            <button id="btnAgregar" class="btn btn-success">Agregar</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Detalle -->
-  <div class="card mt-3">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="m-0">Detalle de mi colección</h6>
-        <small class="text-muted">Click en +/− para ajustar cantidad, o Eliminar para quitarla.</small>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-sm align-middle">
-          <thead class="table-light">
-            <tr>
-              <th class="w-60">ID</th>
-              <th class="w-80">N°</th>
-              <th>Álbum</th>
-              <th>Tipo</th>
-              <th class="w-80">Cant.</th>
-              <th class="w-110 text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-detalle"></tbody>
-        </table>
-      </div>
-    </div>
   </div>
 </div>
 
-<script src="js/app-coleccion.js"></script>
+<script>
+const API = (albumId) => `/api/coleccionistas/1/albums/${albumId}/laminas`;
+
+const albumSel = document.getElementById('albumSel');
+const totalAlbum = document.getElementById('totalAlbum');
+
+const grid = document.getElementById('grid');
+const inNumero = document.getElementById('inNumero');
+const inCantidad = document.getElementById('inCantidad');
+
+const m_total = document.getElementById('m_total');
+const m_coleccionadas = document.getElementById('m_coleccionadas');
+const m_faltan = document.getElementById('m_faltan');
+const m_duplicadas = document.getElementById('m_duplicadas');
+
+document.getElementById('btnPlantilla').addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = API(albumSel.value) + '/plantilla';
+  a.click();
+});
+
+document.getElementById('btnRecargar').addEventListener('click', () => {
+  cargar();
+});
+
+document.getElementById('btnAgregar').addEventListener('click', async () => {
+  const numero = parseInt(inNumero.value);
+  const cantidad = parseInt(inCantidad.value || '1');
+  if (!numero || numero <= 0) { alert('Ingresa N° de lámina válido'); return; }
+
+  const body = { laminaNumero: numero, cantidad: cantidad };
+  const res = await fetch(API(albumSel.value) + '/unitario', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const txt = await res.text(); alert('Error: ' + txt); return;
+  }
+  inNumero.value = ''; inCantidad.value = 1;
+  cargar();
+});
+
+document.getElementById('btnImportar').addEventListener('click', async () => {
+  const file = document.getElementById('csvFile').files[0];
+  if (!file) { alert('Selecciona un CSV'); return; }
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(API(albumSel.value) + '/masivo', { method: 'POST', body: fd });
+  const data = await res.json();
+  alert(`Cargadas OK: ${data.ok}, con error: ${data.error}`);
+  cargar();
+});
+
+albumSel.addEventListener('change', () => cargar());
+
+async function cargar() {
+  // Totales
+  const tRes = await fetch(API(albumSel.value) + '/totales');
+  const t = await tRes.json();
+  m_total.textContent = t.totalAlbum;
+  totalAlbum.value = t.totalAlbum;
+  m_coleccionadas.textContent = t.coleccionadas;
+  m_faltan.textContent = t.faltan;
+  m_duplicadas.textContent = t.duplicadas;
+
+  // Lista
+  const lRes = await fetch(API(albumSel.value));
+  const lista = await lRes.json();
+  grid.innerHTML = '';
+  lista.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.id}</td>
+      <td>${row.numero}</td>
+      <td>${row.album}</td>
+      <td>${row.tipo ?? ''}</td>
+      <td class="text-center">${row.cantidad}</td>
+      <td class="text-end">
+        <button class="btn btn-sm btn-outline-secondary me-1" data-act="dec" data-id="${row.id}">-</button>
+        <button class="btn btn-sm btn-outline-secondary me-1" data-act="inc" data-id="${row.id}">+</button>
+        <button class="btn btn-sm btn-outline-danger" data-act="del" data-id="${row.id}">Eliminar</button>
+      </td>`;
+    grid.appendChild(tr);
+  });
+
+  // Delegación de eventos en acciones
+  grid.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.currentTarget.getAttribute('data-id');
+      const act = e.currentTarget.getAttribute('data-act');
+      if (act === 'inc' || act === 'dec') {
+        await fetch(API(albumSel.value) + `/${id}/${act === 'inc' ? 'incrementar' : 'decrementar'}`, { method: 'PATCH' });
+        cargar();
+      } else if (act === 'del') {
+        if (confirm('¿Eliminar de tu colección?')) {
+          await fetch(API(albumSel.value) + `/${id}`, { method: 'DELETE' });
+          cargar();
+        }
+      }
+    });
+  });
+}
+
+cargar();
+</script>
 </body>
 </html>

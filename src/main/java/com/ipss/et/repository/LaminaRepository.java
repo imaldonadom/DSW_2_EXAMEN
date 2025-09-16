@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface LaminaRepository extends JpaRepository<Lamina, Long> {
 
@@ -15,6 +16,9 @@ public interface LaminaRepository extends JpaRepository<Lamina, Long> {
     boolean existsByAlbumIdAndNumero(Long albumId, Integer numero);
 
     long countByAlbumId(Long albumId);
+
+    /** Recupera una lámina por albumId + numero (para altas unitarias/masivas) */
+    Optional<Lamina> findByAlbumIdAndNumero(Long albumId, Integer numero);
 
     /** borra todas las láminas de un álbum */
     void deleteByAlbumId(Long albumId);
