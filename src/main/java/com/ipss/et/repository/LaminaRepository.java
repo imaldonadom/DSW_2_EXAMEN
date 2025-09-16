@@ -12,12 +12,10 @@ import java.util.Optional;
 
 public interface LaminaRepository extends JpaRepository<Lamina, Long> {
 
-    @EntityGraph(attributePaths = {"album", "tipo"})   // <-- TRAE album y tipo con fetch-eager
+    @EntityGraph(attributePaths = {"album", "tipo"})
     List<Lamina> findByAlbumIdOrderByNumeroAsc(Long albumId);
 
     boolean existsByAlbumIdAndNumero(Long albumId, Integer numero);
-
-    long countByAlbumId(Long albumId);
 
     Optional<Lamina> findByAlbumIdAndNumero(Long albumId, Integer numero);
 
@@ -28,4 +26,15 @@ public interface LaminaRepository extends JpaRepository<Lamina, Long> {
     @Modifying
     @Query("delete from Lamina l where l.id in ?1")
     int deleteByIdIn(Collection<Long> ids);
+
+    // ====== NUEVOS / NECESARIOS ======
+
+    // Conteo de láminas por álbum (lo usa ColeccionLaminaService.totales)
+    long countByAlbumId(Long albumId);
+    // (si prefieres estilo con subpropiedad)
+    // long countByAlbum_Id(Long albumId);
+
+    // Máximo número de lámina por álbum (lo usa el generador “en cola”)
+    @Query("select coalesce(max(l.numero), 0) from Lamina l where l.album.id = ?1")
+    int maxNumeroByAlbum(Long albumId);
 }

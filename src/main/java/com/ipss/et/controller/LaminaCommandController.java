@@ -57,7 +57,7 @@ public class LaminaCommandController {
     }
 
     // ===== GENERAR (el que te falta; acepta query params como usa tu JS) =====
-    // Ej: POST /api/v1/lamina/generar?albumId=1&tipoId=2&cantidad=60
+        // Ej: POST /api/v1/lamina/generar?albumId=1&tipoId=2&cantidad=60
     @PostMapping("/generar")
     @Transactional
     public void generar(@RequestParam Long albumId,
@@ -77,16 +77,22 @@ public class LaminaCommandController {
                     .orElseThrow(() -> new IllegalArgumentException("Tipo no encontrado: " + tipoId));
         }
 
-        // crea láminas 1..cantidad saltando las existentes
-        for (int numero = 1; numero <= cantidad; numero++) {
+        // NUEVO: continuar desde el último número del álbum
+        int start = laminaRepo.maxNumeroByAlbum(albumId) + 1;
+        int end = start + cantidad - 1;
+
+        for (int numero = start; numero <= end; numero++) {
+            // por si hay huecos raros, igual protegemos
             if (laminaRepo.existsByAlbumIdAndNumero(albumId, numero)) continue;
+
             Lamina l = new Lamina();
             l.setAlbum(album);
             l.setNumero(numero);
-            l.setTipo(tipo); // puede ser null
+            l.setTipo(tipo); // Dorada/Brillante/Normal según select (puede ser null)
             laminaRepo.save(l);
         }
     }
+
 
     // ===== ELIMINAR UNA =====
     @DeleteMapping("/{id}")
