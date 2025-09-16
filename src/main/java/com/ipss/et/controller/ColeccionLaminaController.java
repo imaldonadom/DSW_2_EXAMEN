@@ -1,6 +1,7 @@
 package com.ipss.et.controller;
 
 import com.ipss.et.dto.ColeccionDtos.AltaUnitariaReq;
+import com.ipss.et.dto.ColeccionDtos.AltaUnitariaResp;
 import com.ipss.et.dto.ColeccionDtos.TotalesResp;
 import com.ipss.et.service.ColeccionLaminaService;
 import org.springframework.http.HttpHeaders;
@@ -14,7 +15,10 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/coleccionistas/{coleccionistaId}/albums/{albumId}/laminas")
+@RequestMapping(
+    value = "/api/coleccionistas/{coleccionistaId}/albums/{albumId}/laminas",
+    produces = MediaType.APPLICATION_JSON_VALUE
+)
 @CrossOrigin(origins = "*")
 public class ColeccionLaminaController {
 
@@ -26,28 +30,24 @@ public class ColeccionLaminaController {
 
     // ---------- ALTA UNITARIA ----------
     @PostMapping(value = "/unitario", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> altaUnitaria(@PathVariable Long coleccionistaId,
-                                          @PathVariable Long albumId,
-                                          @RequestBody AltaUnitariaReq req) {
+    public ResponseEntity<AltaUnitariaResp> altaUnitaria(@PathVariable Long coleccionistaId,
+                                                         @PathVariable Long albumId,
+                                                         @RequestBody AltaUnitariaReq req) {
         req.coleccionistaId = coleccionistaId;
         req.albumId = albumId;
-        return ResponseEntity.ok(service.altaUnitaria(req));
+        return ResponseEntity.ok(service.altaUnitaria(req)); // devuelve DTO -> evita LazyInit
     }
 
-    // ---------- ALTA MASIVA CSV ----------
-    // CSV esperado (con encabezado):
-    // numero,cantidad
-    // 7,1
-    // 10,2
+    // ---------- ALTA MASIVA ----------
     @PostMapping(value = "/masivo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> altaMasiva(@PathVariable Long coleccionistaId,
-                                        @PathVariable Long albumId,
-                                        @RequestPart("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> altaMasiva(@PathVariable Long coleccionistaId,
+                                                          @PathVariable Long albumId,
+                                                          @RequestPart("file") MultipartFile file) {
         return ResponseEntity.ok(service.altaMasiva(coleccionistaId, albumId, file));
     }
 
     // Descarga plantilla CSV
-    @GetMapping("/plantilla")
+    @GetMapping(value = "/plantilla", produces = "text/csv")
     public ResponseEntity<byte[]> plantilla() {
         String csv = "numero,cantidad\r\n7,1\r\n10,2\r\n";
         return ResponseEntity.ok()

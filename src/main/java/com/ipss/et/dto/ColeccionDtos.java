@@ -3,20 +3,32 @@ package com.ipss.et.dto;
 public class ColeccionDtos {
 
     public static class AltaUnitariaReq {
-        public Long coleccionistaId; // si no gestionas usuarios, manda 1
+        public Long coleccionistaId;
         public Long albumId;
-        public Integer laminaNumero; // ej: 7
-        public Integer cantidad;     // ej: 1
+        public Integer laminaNumero;
+        public Integer cantidad;
+    }
+
+    /** <<< NUEVO: respuesta liviana para el unitario >>> */
+    public static class AltaUnitariaResp {
+        public Long id;
+        public Integer numero;
+        public Integer cantidad;
+
+        public AltaUnitariaResp(Long id, Integer numero, Integer cantidad) {
+            this.id = id;
+            this.numero = numero;
+            this.cantidad = cantidad;
+        }
     }
 
     public static class TotalesResp {
-        public int totalAlbum;      // total de láminas del álbum
-        public int coleccionadas;   // láminas distintas que tiene
-        public int faltan;          // totalAlbum - coleccionadas
-        public int duplicadas;      // sum(cantidades extra) = sum(max(cant-1,0))
-        public TotalesResp(int totalAlbum, int coleccionadas, int faltan, int duplicadas) {
-            this.totalAlbum = totalAlbum; this.coleccionadas = coleccionadas;
-            this.faltan = faltan; this.duplicadas = duplicadas;
+        public int totalAlbum;
+        public int coleccionadas;
+        public int faltan;
+        public int duplicadas;
+        public TotalesResp(int t, int c, int f, int d) {
+            totalAlbum = t; coleccionadas = c; faltan = f; duplicadas = d;
         }
     }
 }

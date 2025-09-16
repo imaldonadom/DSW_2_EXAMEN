@@ -1,6 +1,7 @@
 package com.ipss.et.service;
 
 import com.ipss.et.dto.ColeccionDtos.AltaUnitariaReq;
+import com.ipss.et.dto.ColeccionDtos.AltaUnitariaResp;
 import com.ipss.et.dto.ColeccionDtos.TotalesResp;
 import com.ipss.et.model.Album;
 import com.ipss.et.model.ColeccionLamina;
@@ -8,11 +9,9 @@ import com.ipss.et.model.Lamina;
 import com.ipss.et.repository.AlbumRepository;
 import com.ipss.et.repository.ColeccionLaminaRepository;
 import com.ipss.et.repository.LaminaRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -35,37 +34,31 @@ public class ColeccionLaminaService {
         this.laminaRepo = laminaRepo;
     }
 
-    private Album getAlbumOr404(Long albumId) {
-        return albumRepo.findById(albumId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Álbum no encontrado: " + albumId));
-    }
-
-    private Lamina getLaminaByNumeroOr404(Long albumId, Integer numero) {
-        return laminaRepo.findByAlbumIdAndNumero(albumId, numero)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Lámina N° " + numero + " no existe en el álbum " + albumId));
-    }
-
+    /** <<< CAMBIADO: ahora devuelve DTO liviano >>> */
     @Transactional
-    public ColeccionLamina altaUnitaria(AltaUnitariaReq req) {
+    public AltaUnitariaResp altaUnitaria(AltaUnitariaReq req) {
         if (req.cantidad == null || req.cantidad <= 0) req.cantidad = 1;
 
-        Album album = getAlbumOr404(req.albumId);
-        Lamina lamina = getLaminaByNumeroOr404(req.albumId, req.laminaNumero);
+        Album album = albumRepo.findById(req.albumId)
+                .orElseThrow(() -> new IllegalArgumentException("Álbum no encontrado: " + req.albumId));
+
+        Lamina lamina = laminaRepo.findByAlbumIdAndNumero(req.albumId, req.laminaNumero)
+                .orElseThrow(() -> new IllegalArgumentException("Lámina N° " + req.laminaNumero + " no existe en el álbum"));
 
         Optional<ColeccionLamina> opt = repo.findByColeccionistaIdAndAlbumAndLamina(req.coleccionistaId, album, lamina);
         ColeccionLamina cl = opt.orElseGet(() -> new ColeccionLamina(req.coleccionistaId, album, lamina, 0));
         cl.setCantidad(cl.getCantidad() + req.cantidad);
-        return repo.save(cl);
+        cl = repo.save(cl);
+
+        // devolvemos SOLO lo necesario (ya dentro de la misma transacción)
+        return new AltaUnitariaResp(cl.getId(), lamina.getNumero(), cl.getCantidad());
     }
 
     @Transactional
     public Map<String, Object> altaMasiva(Long coleccionistaId, Long albumId, MultipartFile file) {
-        if (file == null || file.isEmpty())
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Archivo CSV vacío");
-
-        Album album = getAlbumOr404(albumId);
+        if (file == null || file.isEmpty()) throw new IllegalArgumentException("Archivo CSV vacío");
+        Album album = albumRepo.findById(albumId)
+                .orElseThrow(() -> new IllegalArgumentException("Álbum no encontrado: " + albumId));
 
         int ok = 0, err = 0;
         List<String> errores = new ArrayList<>();
@@ -73,32 +66,31 @@ public class ColeccionLaminaService {
         try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
 
-            String header = br.readLine(); // numero,cantidad
-            if (header == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CSV sin contenido");
-            int ln = 1;
+            String header = br.readLine();
+            if (header == null) throw new IllegalArgumentException("CSV sin contenido");
+            int linea = 1;
 
             String row;
             while ((row = br.readLine()) != null) {
-                ln++;
+                linea++;
                 String[] parts = row.split(",", -1);
-                if (parts.length == 0 || parts[0].trim().isEmpty()) {
-                    err++; errores.add("Línea " + ln + ": vacía");
-                    continue;
-                }
+                if (parts.length < 1) { err++; errores.add("Línea " + linea + ": vacía"); continue; }
 
-                Integer numero; Integer cantidad = 1;
+                Integer numero;
+                Integer cantidad = 1;
+
                 try {
-                    numero   = Integer.parseInt(parts[0].trim());
+                    numero = Integer.parseInt(parts[0].trim());
                     if (parts.length > 1 && !parts[1].trim().isEmpty())
                         cantidad = Integer.parseInt(parts[1].trim());
                     if (cantidad <= 0) cantidad = 1;
                 } catch (Exception ex) {
-                    err++; errores.add("Línea " + ln + ": número/cantidad inválidos");
+                    err++; errores.add("Línea " + linea + ": número/cantidad inválidos");
                     continue;
                 }
 
                 Optional<Lamina> opLam = laminaRepo.findByAlbumIdAndNumero(albumId, numero);
-                if (opLam.isEmpty()) { err++; errores.add("Línea " + ln + ": lámina " + numero + " no existe"); continue; }
+                if (opLam.isEmpty()) { err++; errores.add("Línea " + linea + ": lámina " + numero + " no existe"); continue; }
 
                 Lamina lamina = opLam.get();
                 Optional<ColeccionLamina> opt = repo.findByColeccionistaIdAndAlbumAndLamina(coleccionistaId, album, lamina);
@@ -107,10 +99,8 @@ public class ColeccionLaminaService {
                 repo.save(cl);
                 ok++;
             }
-        } catch (ResponseStatusException rse) {
-            throw rse;
         } catch (Exception ex) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error leyendo CSV: " + ex.getMessage(), ex);
+            throw new RuntimeException("Error leyendo CSV: " + ex.getMessage(), ex);
         }
 
         Map<String, Object> r = new HashMap<>();
@@ -127,15 +117,18 @@ public class ColeccionLaminaService {
 
         int totalAlbum = (int) laminaRepo.countByAlbumId(albumId);
         int coleccionadas = (int) lista.stream().filter(cl -> cl.getCantidad() != null && cl.getCantidad() > 0).count();
-        int duplicadas = lista.stream().mapToInt(cl -> Math.max((cl.getCantidad() == null ? 0 : cl.getCantidad()) - 1, 0)).sum();
-        int faltan = Math.max(totalAlbum - coleccionadas, 0);
+        int duplicadas = lista.stream()
+                .mapToInt(cl -> Math.max((cl.getCantidad() == null ? 0 : cl.getCantidad()) - 1, 0))
+                .sum();
 
+        int faltan = Math.max(totalAlbum - coleccionadas, 0);
         return new TotalesResp(totalAlbum, coleccionadas, faltan, duplicadas);
     }
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> listar(Long coleccionistaId, Long albumId) {
-        return repo.findByColeccionistaIdAndAlbum_Id(coleccionistaId, albumId).stream()
+        return repo.findByColeccionistaIdAndAlbum_Id(coleccionistaId, albumId)
+                .stream()
                 .map(cl -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", cl.getId());
@@ -144,15 +137,13 @@ public class ColeccionLaminaService {
                     m.put("tipo", cl.getLamina().getTipo());
                     m.put("cantidad", cl.getCantidad());
                     return m;
-                })
-                .sorted(Comparator.comparingInt(m -> (Integer) m.get("numero")))
+                }).sorted(Comparator.comparingInt(m -> (Integer) m.get("numero")))
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public void ajustarCantidad(Long id, int delta) {
-        ColeccionLamina cl = repo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registro no encontrado: " + id));
+        ColeccionLamina cl = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Registro no encontrado"));
         int nueva = Math.max(0, cl.getCantidad() + delta);
         cl.setCantidad(nueva);
         repo.save(cl);
@@ -160,8 +151,6 @@ public class ColeccionLaminaService {
 
     @Transactional
     public void eliminar(Long id) {
-        if (!repo.existsById(id))
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Registro no encontrado: " + id);
         repo.deleteById(id);
     }
 }
