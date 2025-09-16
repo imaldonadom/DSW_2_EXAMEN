@@ -20,4 +20,16 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
     @EntityGraph(attributePaths = {"categoria", "tags"})
     @Query("select a from Album a where a.id = :id")
     Optional<Album> findByIdGraph(@Param("id") Long id);
+
+    // ===== NUEVO: álbumes que tienen al menos una lámina =====
+    @Query("""
+           select distinct a
+           from Album a
+           where exists (
+             select 1 from Lamina l
+             where l.album = a
+           )
+           order by a.nombre asc
+           """)
+    List<Album> findAllWithLaminas();
 }

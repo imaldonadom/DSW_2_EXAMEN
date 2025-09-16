@@ -3,6 +3,7 @@ C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\config\LocalDateAttribute
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\config\LocalDateStringConverter.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\config\OpenAPIConfig.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\config\SecurityConfig.java
+C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\AdminMaintenanceController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\AlbumController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\CategoriaController.java
 C:\xampp\htdocs\DSW_2_EXAMEN\src\main\java\com\ipss\et\controller\ColeccionController.java

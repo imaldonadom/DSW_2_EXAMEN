@@ -63,6 +63,7 @@ com\ipss\et\service\ColeccionService$Row.class
 com\ipss\et\service\impl\LaminaServiceImpl.class
 com\ipss\et\model\TipoLamina$TipoLaminaBuilder.class
 com\ipss\et\model\Coleccionista$ColeccionistaBuilder.class
+com\ipss\et\controller\AdminMaintenanceController.class
 com\ipss\et\service\AlbumServiceImpl.class
 com\ipss\et\config\SecurityConfig.class
 com\ipss\et\repository\AlbumRepository.class

@@ -35,24 +35,30 @@ public class ColeccionLaminaService {
     }
 
     /** <<< CAMBIADO: ahora devuelve DTO liviano >>> */
-    @Transactional
-    public AltaUnitariaResp altaUnitaria(AltaUnitariaReq req) {
-        if (req.cantidad == null || req.cantidad <= 0) req.cantidad = 1;
+@Transactional
+public AltaUnitariaResp altaUnitaria(AltaUnitariaReq req) {
+    if (req.cantidad == null || req.cantidad <= 0) req.cantidad = 1;
 
-        Album album = albumRepo.findById(req.albumId)
-                .orElseThrow(() -> new IllegalArgumentException("Álbum no encontrado: " + req.albumId));
+    Album album = albumRepo.findById(req.albumId)
+            .orElseThrow(() -> new IllegalArgumentException("Álbum no encontrado: " + req.albumId));
 
-        Lamina lamina = laminaRepo.findByAlbumIdAndNumero(req.albumId, req.laminaNumero)
-                .orElseThrow(() -> new IllegalArgumentException("Lámina N° " + req.laminaNumero + " no existe en el álbum"));
+    // <- AQUI la clave: si la lámina no existe en el catálogo, la creamos
+    Lamina lamina = laminaRepo.findByAlbumIdAndNumero(req.albumId, req.laminaNumero)
+            .orElseGet(() -> {
+                Lamina l = new Lamina();
+                l.setAlbum(album);
+                l.setNumero(req.laminaNumero);
+                return laminaRepo.save(l);
+            });
 
-        Optional<ColeccionLamina> opt = repo.findByColeccionistaIdAndAlbumAndLamina(req.coleccionistaId, album, lamina);
-        ColeccionLamina cl = opt.orElseGet(() -> new ColeccionLamina(req.coleccionistaId, album, lamina, 0));
-        cl.setCantidad(cl.getCantidad() + req.cantidad);
-        cl = repo.save(cl);
+    Optional<ColeccionLamina> opt = repo.findByColeccionistaIdAndAlbumAndLamina(req.coleccionistaId, album, lamina);
+    ColeccionLamina cl = opt.orElseGet(() -> new ColeccionLamina(req.coleccionistaId, album, lamina, 0));
+    cl.setCantidad(cl.getCantidad() + req.cantidad);
+    cl = repo.save(cl);
 
-        // devolvemos SOLO lo necesario (ya dentro de la misma transacción)
-        return new AltaUnitariaResp(cl.getId(), lamina.getNumero(), cl.getCantidad());
-    }
+    return new AltaUnitariaResp(cl.getId(), lamina.getNumero(), cl.getCantidad());
+}
+
 
     @Transactional
     public Map<String, Object> altaMasiva(Long coleccionistaId, Long albumId, MultipartFile file) {
@@ -125,21 +131,25 @@ public class ColeccionLaminaService {
         return new TotalesResp(totalAlbum, coleccionadas, faltan, duplicadas);
     }
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> listar(Long coleccionistaId, Long albumId) {
-        return repo.findByColeccionistaIdAndAlbum_Id(coleccionistaId, albumId)
-                .stream()
-                .map(cl -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put("id", cl.getId());
-                    m.put("numero", cl.getLamina().getNumero());
-                    m.put("album", cl.getAlbum().getNombre());
-                    m.put("tipo", cl.getLamina().getTipo());
-                    m.put("cantidad", cl.getCantidad());
-                    return m;
-                }).sorted(Comparator.comparingInt(m -> (Integer) m.get("numero")))
-                .collect(Collectors.toList());
-    }
+        @Transactional(readOnly = true)
+        public List<Map<String, Object>> listar(Long coleccionistaId, Long albumId) {
+            List<ColeccionLamina> lista = repo.findByColeccionistaIdAndAlbum_Id(coleccionistaId, albumId);
+
+            return lista.stream()
+                    .filter(cl -> cl.getCantidad() != null && cl.getCantidad() > 0)
+                    .sorted(Comparator.comparingInt(cl -> cl.getLamina().getNumero()))
+                    .map(cl -> {
+                        Map<String, Object> m = new LinkedHashMap<>();
+                        m.put("id", cl.getId());
+                        m.put("numero", cl.getLamina().getNumero());
+                        m.put("album", cl.getAlbum().getNombre());
+                        m.put("tipo", (cl.getLamina().getTipo() != null) ? cl.getLamina().getTipo().getNombre() : null);
+                        m.put("cantidad", cl.getCantidad());
+                        return m;
+                    })
+                    .collect(Collectors.toList());
+        }
+
 
     @Transactional
     public void ajustarCantidad(Long id, int delta) {

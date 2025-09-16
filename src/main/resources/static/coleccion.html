@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>Examen 3 – Coleccionista</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
     body { padding: 24px; }
     .card-mini { min-height: 84px; }
@@ -26,21 +26,18 @@
           <div class="row g-2 align-items-center">
             <div class="col-md-8">
               <label class="form-label">Álbum</label>
-              <select id="albumSel" class="form-select">
-                <!-- Cargar dinámico si quieres, aquí va ejemplo -->
-                <option value="1">copa libertadores 2026</option>
-              </select>
+              <select id="albumSel" class="form-select"></select>
             </div>
             <div class="col-md-4">
               <label class="form-label">Total láminas</label>
-              <input id="totalAlbum" class="form-control" value="150" disabled>
+              <input id="totalAlbum" class="form-control" value="0" disabled />
             </div>
           </div>
 
           <div class="mt-3 d-flex gap-2">
             <a id="btnPlantilla" class="btn btn-outline-secondary">Descargar plantilla CSV</a>
             <label class="btn btn-outline-primary mb-0">
-              Seleccionar CSV <input id="csvFile" type="file" accept=".csv" hidden>
+              Seleccionar CSV <input id="csvFile" type="file" accept=".csv" hidden />
             </label>
             <button id="btnImportar" class="btn btn-primary">Importar CSV</button>
             <button id="btnRecargar" class="btn btn-outline-secondary">Recargar</button>
@@ -114,11 +111,11 @@
           <div class="row g-2">
             <div class="col-8">
               <label class="form-label">N° lámina</label>
-              <input id="inNumero" class="form-control" placeholder="p.ej. 7">
+              <input id="inNumero" class="form-control" placeholder="p.ej. 7" />
             </div>
             <div class="col-4">
               <label class="form-label">Cantidad</label>
-              <input id="inCantidad" class="form-control" type="number" value="1" min="1">
+              <input id="inCantidad" class="form-control" type="number" value="1" min="1" />
             </div>
           </div>
           <div class="mt-2 small text-muted">Consejo: usa la plantilla CSV para cargas grandes.</div>
@@ -133,49 +130,94 @@
 </div>
 
 <script>
+/* Endpoints */
+const API_ALBUMS = '/api/v1/album';
 const API = (albumId) => `/api/coleccionistas/1/albums/${albumId}/laminas`;
 
-const albumSel = document.getElementById('albumSel');
+/* Refs */
+const albumSel   = document.getElementById('albumSel');
 const totalAlbum = document.getElementById('totalAlbum');
 
-const grid = document.getElementById('grid');
-const inNumero = document.getElementById('inNumero');
+const grid       = document.getElementById('grid');
+const inNumero   = document.getElementById('inNumero');
 const inCantidad = document.getElementById('inCantidad');
 
-const m_total = document.getElementById('m_total');
+const m_total         = document.getElementById('m_total');
 const m_coleccionadas = document.getElementById('m_coleccionadas');
-const m_faltan = document.getElementById('m_faltan');
-const m_duplicadas = document.getElementById('m_duplicadas');
+const m_faltan        = document.getElementById('m_faltan');
+const m_duplicadas    = document.getElementById('m_duplicadas');
 
+/* Helpers */
+function option(value, text) {
+  const o = document.createElement('option');
+  o.value = value;
+  o.textContent = text;
+  return o;
+}
+
+/* Carga TODOS los álbumes y llena el combo; luego llama a cargar() */
+async function loadAlbums() {
+  try {
+    const r = await fetch(API_ALBUMS);
+    if (!r.ok) throw new Error('No se pudieron cargar álbumes.');
+    const albums = await r.json();
+
+    const prev = albumSel.value || null;
+    albumSel.innerHTML = '';
+    albumSel.appendChild(option('', '— elige álbum —'));
+    for (const a of albums) albumSel.appendChild(option(a.id, a.nombre));
+
+    if (prev && [...albumSel.options].some(o => o.value === prev)) {
+      albumSel.value = prev;
+    } else if (albums.length > 0) {
+      albumSel.value = String(albums[0].id);
+    }
+
+    if (albumSel.value) await cargar();
+  } catch (e) {
+    alert(`Error inicializando combos.\n${e.message ?? e}`);
+  }
+}
+
+/* Acciones cabecera */
 document.getElementById('btnPlantilla').addEventListener('click', () => {
+  if (!albumSel.value) { alert('Selecciona un álbum.'); return; }
   const a = document.createElement('a');
   a.href = API(albumSel.value) + '/plantilla';
   a.click();
 });
 
 document.getElementById('btnRecargar').addEventListener('click', () => {
-  cargar();
+  loadAlbums(); // refresca combos + métricas + grilla
 });
 
 document.getElementById('btnAgregar').addEventListener('click', async () => {
   const numero = parseInt(inNumero.value);
   const cantidad = parseInt(inCantidad.value || '1');
   if (!numero || numero <= 0) { alert('Ingresa N° de lámina válido'); return; }
+  if (!albumSel.value) { alert('Selecciona un álbum.'); return; }
 
   const body = { laminaNumero: numero, cantidad: cantidad };
   const res = await fetch(API(albumSel.value) + '/unitario', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
   });
   if (!res.ok) {
-    const txt = await res.text(); alert('Error: ' + txt); return;
+    const txt = await res.text();
+    alert('Error: ' + txt);
+    return;
   }
-  inNumero.value = ''; inCantidad.value = 1;
+  inNumero.value = '';
+  inCantidad.value = 1;
   cargar();
 });
 
 document.getElementById('btnImportar').addEventListener('click', async () => {
   const file = document.getElementById('csvFile').files[0];
   if (!file) { alert('Selecciona un CSV'); return; }
+  if (!albumSel.value) { alert('Selecciona un álbum.'); return; }
+
   const fd = new FormData();
   fd.append('file', file);
   const res = await fetch(API(albumSel.value) + '/masivo', { method: 'POST', body: fd });
@@ -184,57 +226,80 @@ document.getElementById('btnImportar').addEventListener('click', async () => {
   cargar();
 });
 
+/* Cambio de álbum */
 albumSel.addEventListener('change', () => cargar());
 
+/* Carga métricas y grilla */
 async function cargar() {
+  if (!albumSel.value) return;
+
   // Totales
-  const tRes = await fetch(API(albumSel.value) + '/totales');
-  const t = await tRes.json();
-  m_total.textContent = t.totalAlbum;
-  totalAlbum.value = t.totalAlbum;
-  m_coleccionadas.textContent = t.coleccionadas;
-  m_faltan.textContent = t.faltan;
-  m_duplicadas.textContent = t.duplicadas;
+  {
+    const tRes = await fetch(API(albumSel.value) + '/totales');
+    if (!tRes.ok) { alert('Error cargando totales.'); return; }
+    const t = await tRes.json();
+    m_total.textContent             = t.totalAlbum ?? 0;
+    totalAlbum.value                = t.totalAlbum ?? 0;
+    m_coleccionadas.textContent     = t.coleccionadas ?? 0;
+    m_faltan.textContent            = t.faltan ?? 0;
+    m_duplicadas.textContent        = t.duplicadas ?? 0;
+  }
 
-  // Lista
-  const lRes = await fetch(API(albumSel.value));
-  const lista = await lRes.json();
-  grid.innerHTML = '';
-  lista.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${row.id}</td>
-      <td>${row.numero}</td>
-      <td>${row.album}</td>
-      <td>${row.tipo ?? ''}</td>
-      <td class="text-center">${row.cantidad}</td>
-      <td class="text-end">
-        <button class="btn btn-sm btn-outline-secondary me-1" data-act="dec" data-id="${row.id}">-</button>
-        <button class="btn btn-sm btn-outline-secondary me-1" data-act="inc" data-id="${row.id}">+</button>
-        <button class="btn btn-sm btn-outline-danger" data-act="del" data-id="${row.id}">Eliminar</button>
-      </td>`;
-    grid.appendChild(tr);
-  });
+  // Lista (robusto: acepta array plano o {content/items/data})
+  try {
+    const lRes  = await fetch(API(albumSel.value));
+    if (!lRes.ok) throw new Error('HTTP ' + lRes.status);
+    const data  = await lRes.json();
+    const lista = Array.isArray(data) ? data : (data?.content ?? data?.items ?? data?.data ?? []);
 
-  // Delegación de eventos en acciones
-  grid.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const id = e.currentTarget.getAttribute('data-id');
-      const act = e.currentTarget.getAttribute('data-act');
-      if (act === 'inc' || act === 'dec') {
-        await fetch(API(albumSel.value) + `/${id}/${act === 'inc' ? 'incrementar' : 'decrementar'}`, { method: 'PATCH' });
-        cargar();
-      } else if (act === 'del') {
-        if (confirm('¿Eliminar de tu colección?')) {
-          await fetch(API(albumSel.value) + `/${id}`, { method: 'DELETE' });
-          cargar();
-        }
-      }
+    grid.innerHTML = '';
+    if (!Array.isArray(lista) || lista.length === 0) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td colspan="6" class="text-center text-muted py-3">No hay láminas registradas para este álbum.</td>';
+      grid.appendChild(tr);
+      return;
+    }
+
+    lista.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.id ?? ''}</td>
+        <td>${row.numero ?? ''}</td>
+        <td>${row.album ?? ''}</td>
+        <td>${row.tipo ?? ''}</td>
+        <td class="text-center">${row.cantidad ?? ''}</td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-secondary me-1" data-act="dec" data-id="${row.id}">-</button>
+          <button class="btn btn-sm btn-outline-secondary me-1" data-act="inc" data-id="${row.id}">+</button>
+          <button class="btn btn-sm btn-outline-danger" data-act="del" data-id="${row.id}">Eliminar</button>
+        </td>`;
+      grid.appendChild(tr);
     });
-  });
+
+    // Delegación
+    grid.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id  = e.currentTarget.getAttribute('data-id');
+        const act = e.currentTarget.getAttribute('data-act');
+        if (act === 'inc' || act === 'dec') {
+          await fetch(API(albumSel.value) + `/${id}/${act === 'inc' ? 'incrementar' : 'decrementar'}`, { method: 'PATCH' });
+          cargar();
+        } else if (act === 'del') {
+          if (confirm('¿Eliminar de tu colección?')) {
+            await fetch(API(albumSel.value) + `/${id}`, { method: 'DELETE' });
+            cargar();
+          }
+        }
+      });
+    });
+
+  } catch (e) {
+    alert('Error cargando datos: No fue posible cargar la lista.');
+  }
 }
 
-cargar();
+/* Init */
+document.addEventListener('DOMContentLoaded', () => { loadAlbums(); });
 </script>
 </body>
 </html>
